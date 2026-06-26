@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <!-- 讓手機顯示正常、禁止使用者縮放（避免雙指縮放跟遊戲縮放衝突） -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#1b2838" />
+  <title>迷你模擬城市</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <!-- 遊戲畫布：城市畫在這裡 -->
+  <canvas id="game"></canvas>
+
+  <!-- 上方資訊列：金錢、人口、收入 -->
+  <header id="topbar">
+    <div class="stat"><span class="label">💰 資金</span><span id="stat-money" class="value">0</span></div>
+    <div class="stat"><span class="label">👥 人口</span><span id="stat-pop" class="value">0</span></div>
+    <div class="stat"><span class="label">📈 收入/月</span><span id="stat-income" class="value">0</span></div>
+    <div class="stat"><span class="label">🗓️ 月份</span><span id="stat-month" class="value">1</span></div>
+  </header>
+
+  <!-- 下方工具列：選擇要蓋什麼 -->
+  <nav id="toolbar">
+    <button class="tool" data-tool="road"  title="道路">🛣️<small>道路</small></button>
+    <button class="tool" data-tool="house" title="住宅">🏠<small>住宅</small></button>
+    <button class="tool" data-tool="shop"  title="商店">🏪<small>商店</small></button>
+    <button class="tool" data-tool="park"  title="公園">🌳<small>公園</small></button>
+    <button class="tool" data-tool="bulldoze" title="拆除">🚧<small>拆除</small></button>
+  </nav>
+
+  <!-- 右上角選單按鈕 -->
+  <div id="menu-area">
+    <button id="btn-menu" title="選單">☰</button>
+    <div id="menu-panel" class="hidden">
+      <button id="btn-save">💾 立即存檔</button>
+      <button id="btn-load">📂 讀取存檔</button>
+      <button id="btn-export">⬇️ 匯出存檔檔</button>
+      <button id="btn-import">⬆️ 匯入存檔檔</button>
+      <button id="btn-new">🆕 重新開始</button>
+      <hr />
+      <div class="hint">提示：拖曳空白處可平移地圖，<br/>滾輪 / 雙指可縮放。</div>
+    </div>
+  </div>
+
+  <!-- 提示用的浮動訊息（例如錢不夠） -->
+  <div id="toast" class="hidden"></div>
+
+  <!-- 隱藏的檔案輸入，用來匯入存檔 -->
+  <input type="file" id="file-input" accept="application/json" hidden />
+
+  <!-- 載入遊戲程式。type=module 讓我們可以把程式拆成多個檔案、互相 import -->
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
