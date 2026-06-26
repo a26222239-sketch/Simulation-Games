@@ -1,77 +1,97 @@
-/* ===== 基礎重置 ===== */
+/* ===== 基礎 ===== */
 * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body {
   width: 100%; height: 100%; overflow: hidden;
   font-family: system-ui, "Noto Sans TC", "Microsoft JhengHei", sans-serif;
-  background: #0f1620;
-  color: #e8eef5;
-  user-select: none; -webkit-user-select: none;
-  touch-action: none; /* 由我們自己處理觸控，避免瀏覽器捲動 */
+  background: #0f1620; color: #e8eef5;
+  user-select: none; -webkit-user-select: none; touch-action: none;
 }
-
-/* ===== 遊戲畫布 ===== */
-#game { display: block; width: 100vw; height: 100vh; cursor: pointer; }
+#game { display: block; width: 100vw; height: 100vh; }
+.hidden { display: none !important; }
 
 /* ===== 上方資訊列 ===== */
 #topbar {
-  position: fixed; top: 0; left: 0; right: 0;
-  display: flex; gap: 6px; padding: 8px 10px;
-  background: linear-gradient(180deg, rgba(15,22,32,.95), rgba(15,22,32,.6));
-  backdrop-filter: blur(4px);
-  pointer-events: none; /* 不擋住底下地圖的操作 */
-  flex-wrap: wrap;
+  position: fixed; top: 0; left: 0; right: 0; display: flex; gap: 6px;
+  padding: 8px 10px; pointer-events: none; flex-wrap: wrap;
 }
 .stat {
   display: flex; flex-direction: column; align-items: center;
-  background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.08);
-  border-radius: 10px; padding: 4px 12px; min-width: 70px;
+  background: rgba(20,30,20,.6); border: 1px solid rgba(255,255,255,.12);
+  border-radius: 10px; padding: 4px 10px; min-width: 64px; backdrop-filter: blur(3px);
 }
-.stat .label { font-size: 11px; opacity: .7; }
-.stat .value { font-size: 18px; font-weight: 700; }
+.stat .label { font-size: 11px; opacity: .8; }
+.stat .value { font-size: 17px; font-weight: 700; }
 
-/* ===== 下方工具列 ===== */
+/* ===== 右側動作按鈕 ===== */
+#actions { position: fixed; top: 64px; right: 8px; z-index: 20; display: flex; flex-direction: column; gap: 8px; }
+#actions > button {
+  width: 46px; height: 46px; border-radius: 12px; border: none;
+  background: rgba(20,30,20,.65); color: #fff; font-size: 22px; cursor: pointer;
+  border: 1px solid rgba(255,255,255,.12);
+}
+#actions > button:active { transform: scale(.93); }
+#menu-panel {
+  position: absolute; top: 0; right: 54px; width: 180px;
+  background: #1b2a1b; border: 1px solid rgba(255,255,255,.14);
+  border-radius: 12px; padding: 8px; display: flex; flex-direction: column; gap: 6px;
+}
+#menu-panel button { text-align: left; padding: 10px; border-radius: 8px; border: none; background: rgba(255,255,255,.07); color: #e8eef5; font-size: 14px; cursor: pointer; }
+#menu-panel button:active { background: rgba(255,255,255,.18); }
+
+/* ===== 虛擬搖桿 ===== */
+#joy {
+  position: fixed; left: 18px; bottom: 92px; width: 110px; height: 110px;
+  border-radius: 50%; background: rgba(255,255,255,.08); border: 2px solid rgba(255,255,255,.18);
+  z-index: 15; touch-action: none;
+}
+#joy-stick {
+  position: absolute; left: 50%; top: 50%; width: 48px; height: 48px; margin: -24px 0 0 -24px;
+  border-radius: 50%; background: rgba(255,255,255,.55); transition: transform .03s;
+}
+
+/* ===== 底部工具列 ===== */
 #toolbar {
-  position: fixed; bottom: 0; left: 0; right: 0;
-  display: flex; justify-content: center; gap: 8px;
+  position: fixed; bottom: 0; left: 0; right: 0; display: flex; justify-content: center; gap: 8px;
   padding: 10px 8px calc(10px + env(safe-area-inset-bottom));
-  background: linear-gradient(0deg, rgba(15,22,32,.95), rgba(15,22,32,.5));
-  backdrop-filter: blur(4px);
 }
 .tool {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  width: 60px; height: 60px; border-radius: 14px;
-  border: 2px solid transparent; background: rgba(255,255,255,.08);
-  color: #e8eef5; font-size: 22px; cursor: pointer; transition: .12s;
+  width: 56px; height: 56px; border-radius: 14px; border: 2px solid transparent;
+  background: rgba(20,30,20,.7); color: #e8eef5; font-size: 20px; cursor: pointer;
 }
-.tool small { font-size: 11px; margin-top: 2px; opacity: .85; }
+.tool small { font-size: 10px; margin-top: 2px; opacity: .85; }
 .tool:active { transform: scale(.94); }
-.tool.active { border-color: #4fc3f7; background: rgba(79,195,247,.22); }
-
-/* ===== 右上選單 ===== */
-#menu-area { position: fixed; top: 8px; right: 8px; z-index: 20; }
-#btn-menu {
-  width: 44px; height: 44px; border-radius: 12px; border: none;
-  background: rgba(255,255,255,.12); color: #fff; font-size: 22px; cursor: pointer;
-}
-#menu-panel {
-  position: absolute; top: 52px; right: 0; width: 200px;
-  background: #1b2838; border: 1px solid rgba(255,255,255,.12);
-  border-radius: 12px; padding: 8px; display: flex; flex-direction: column; gap: 6px;
-  box-shadow: 0 8px 30px rgba(0,0,0,.5);
-}
-#menu-panel button {
-  text-align: left; padding: 10px; border-radius: 8px; border: none;
-  background: rgba(255,255,255,.06); color: #e8eef5; font-size: 14px; cursor: pointer;
-}
-#menu-panel button:active { background: rgba(255,255,255,.16); }
-#menu-panel hr { border: none; border-top: 1px solid rgba(255,255,255,.1); }
-.hint { font-size: 11px; opacity: .6; line-height: 1.5; padding: 0 4px; }
+.tool.active { border-color: #8fe06a; background: rgba(143,224,106,.25); }
 
 /* ===== 浮動提示 ===== */
 #toast {
-  position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
-  background: rgba(0,0,0,.82); color: #fff; padding: 12px 20px;
-  border-radius: 12px; font-size: 15px; z-index: 30; transition: opacity .25s;
+  position: fixed; top: 18%; left: 50%; transform: translateX(-50%);
+  background: rgba(0,0,0,.82); color: #fff; padding: 10px 18px; border-radius: 12px;
+  font-size: 15px; z-index: 40; transition: opacity .25s;
 }
 
-.hidden { display: none !important; }
+/* ===== 彈出視窗 ===== */
+#modal {
+  position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 50;
+  display: flex; align-items: center; justify-content: center; padding: 16px;
+}
+.modal-card {
+  width: 100%; max-width: 420px; max-height: 86vh; overflow-y: auto;
+  background: #20301f; border: 1px solid rgba(255,255,255,.14); border-radius: 16px;
+  padding: 16px; display: flex; flex-direction: column; gap: 10px;
+}
+.modal-card h2 { font-size: 18px; }
+.sec-label { font-size: 13px; opacity: .8; margin-top: 4px; }
+.creator-wrap { display: flex; gap: 14px; align-items: flex-start; }
+.creator-wrap canvas { background: #eef3f6; border-radius: 12px; }
+.creator-opts { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+.swatch-row, .chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.swatch { width: 30px; height: 30px; border-radius: 8px; border: 2px solid rgba(255,255,255,.2); cursor: pointer; }
+.swatch.sel { border-color: #ffe082; box-shadow: 0 0 0 2px #ffe082 inset; }
+.chip { padding: 6px 12px; border-radius: 18px; border: 1px solid rgba(255,255,255,.2); background: rgba(255,255,255,.06); color: #fff; cursor: pointer; font-size: 14px; }
+.chip.sel { background: #4f9d5d; border-color: #8fe06a; }
+.list-btn { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.06); color: #fff; cursor: pointer; font-size: 15px; }
+.list-btn.sel { border-color: #8fe06a; background: rgba(143,224,106,.2); }
+.list-btn small { opacity: .85; font-size: 13px; }
+.primary-btn { margin-top: 6px; padding: 12px; border-radius: 10px; border: none; background: #4f9d5d; color: #fff; font-size: 16px; font-weight: 700; cursor: pointer; }
+.primary-btn:active { transform: scale(.98); }

@@ -1,130 +1,71 @@
 // ============================================================
-// input.js — 滑鼠與觸控操作
-//  - 點一下（沒有拖動）：在該格蓋目前選的建築 / 拆除
-//  - 按住拖曳：平移地圖
-//  - 滾輪 / 雙指：縮放
-// 桌機與手機共用同一套 pointer 事件。
+// input.js — 操作：移動 + 點擊互動
+//  ‧ 電腦：WASD / 方向鍵移動；滑鼠點地圖格子互動
+//  ‧ 手機：左下虛擬搖桿移動；點地圖格子互動
+// main.js 每幀讀 input.moveVec 來移動主角；點擊時呼叫 onTap(cx,cy)。
 // ============================================================
-
 export class Input {
-  constructor(canvas, game, renderer, onPlace) {
-    this.canvas = canvas;
-    this.game = game;
-    this.renderer = renderer;
-    this.onPlace = onPlace; // 點擊放置時呼叫的 callback(gx, gy)
-
-    this.pointers = new Map(); // 目前按著的指標（支援多指）
-    this.dragging = false;
-    this.moved = false;        // 這次按壓有沒有移動超過門檻（用來區分點擊 vs 拖曳）
-    this.lastPinchDist = 0;
-    this.lastSingle = null;
-
-    this.bind();
+  constructor(canvas, joystick, renderer, onTap) {
+    this.canvas = canvas; this.renderer = renderer; this.onTap = onTap;
+    this.joystick = joystick;           // { base, stick } DOM
+    this.keys = {};                     // 鍵盤狀態
+    this.joyVec = { x: 0, y: 0 };       // 搖桿向量
+    this.moveVec = { x: 0, y: 0 };
+    this.bindKeys();
+    this.bindJoystick();
+    this.bindTap();
   }
 
-  bind() {
-    const c = this.canvas;
-    c.addEventListener("pointerdown", (e) => this.onDown(e));
-    c.addEventListener("pointermove", (e) => this.onMove(e));
-    c.addEventListener("pointerup", (e) => this.onUp(e));
-    c.addEventListener("pointercancel", (e) => this.onUp(e));
-    c.addEventListener("pointerleave", () => { this.renderer.hover = null; });
-    // 滾輪縮放（桌機）
-    c.addEventListener("wheel", (e) => this.onWheel(e), { passive: false });
+  bindKeys() {
+    const map = { w: [0,-1], a: [-1,0], s: [0,1], d: [1,0],
+      arrowup: [0,-1], arrowleft: [-1,0], arrowdown: [0,1], arrowright: [1,0] };
+    const upd = () => {
+      let x = 0, y = 0;
+      for (const k in this.keys) if (this.keys[k] && map[k]) { x += map[k][0]; y += map[k][1]; }
+      this.keyVec = { x, y };
+      this.recompute();
+    };
+    window.addEventListener("keydown", (e) => { const k = e.key.toLowerCase(); if (map[k]) { this.keys[k] = true; upd(); e.preventDefault(); } });
+    window.addEventListener("keyup", (e) => { const k = e.key.toLowerCase(); if (map[k]) { this.keys[k] = false; upd(); } });
+    this.keyVec = { x: 0, y: 0 };
   }
 
-  pos(e) {
-    const r = this.canvas.getBoundingClientRect();
-    return { x: e.clientX - r.left, y: e.clientY - r.top };
+  recompute() {
+    // 鍵盤優先；沒按鍵就用搖桿
+    const kv = this.keyVec || { x: 0, y: 0 };
+    if (kv.x || kv.y) this.moveVec = { x: kv.x, y: kv.y };
+    else this.moveVec = { x: this.joyVec.x, y: this.joyVec.y };
   }
 
-  onDown(e) {
-    this.canvas.setPointerCapture(e.pointerId);
-    this.pointers.set(e.pointerId, this.pos(e));
-    this.moved = false;
-    if (this.pointers.size === 1) {
-      this.dragging = true;
-      this.lastSingle = this.pos(e);
-    } else if (this.pointers.size === 2) {
-      // 進入雙指縮放，取消單指拖曳
-      this.dragging = false;
-      this.lastPinchDist = this.pinchDist();
-    }
+  bindJoystick() {
+    const base = this.joystick.base, stick = this.joystick.stick;
+    const R = 42;
+    let id = null, ox = 0, oy = 0;
+    const start = (e) => { id = e.pointerId; const r = base.getBoundingClientRect(); ox = r.left + r.width / 2; oy = r.top + r.height / 2; base.setPointerCapture(id); move(e); };
+    const move = (e) => {
+      if (e.pointerId !== id) return;
+      let dx = e.clientX - ox, dy = e.clientY - oy;
+      const d = Math.hypot(dx, dy); if (d > R) { dx = dx / d * R; dy = dy / d * R; }
+      stick.style.transform = `translate(${dx}px,${dy}px)`;
+      this.joyVec = { x: dx / R, y: dy / R }; this.recompute();
+    };
+    const end = (e) => { if (e.pointerId !== id) return; id = null; stick.style.transform = "translate(0,0)"; this.joyVec = { x: 0, y: 0 }; this.recompute(); };
+    base.addEventListener("pointerdown", start);
+    base.addEventListener("pointermove", move);
+    base.addEventListener("pointerup", end);
+    base.addEventListener("pointercancel", end);
   }
 
-  onMove(e) {
-    const p = this.pos(e);
-    if (this.pointers.has(e.pointerId)) this.pointers.set(e.pointerId, p);
-
-    // 更新懸停的格子（讓畫面有高亮）
-    this.renderer.hover = this.renderer.canvasToGrid(p.x, p.y);
-
-    if (this.pointers.size === 2) {
-      // 雙指縮放
-      const d = this.pinchDist();
-      if (this.lastPinchDist > 0) {
-        const factor = d / this.lastPinchDist;
-        this.zoomAt(this.pinchCenter(), factor);
+  bindTap() {
+    let downX = 0, downY = 0, downT = 0;
+    this.canvas.addEventListener("pointerdown", (e) => { downX = e.clientX; downY = e.clientY; downT = performance.now(); });
+    this.canvas.addEventListener("pointerup", (e) => {
+      const moved = Math.hypot(e.clientX - downX, e.clientY - downY);
+      if (moved < 10 && performance.now() - downT < 500) {
+        const r = this.canvas.getBoundingClientRect();
+        const { gx, gy } = this.renderer.canvasToGrid(e.clientX - r.left, e.clientY - r.top);
+        this.onTap(gx, gy);
       }
-      this.lastPinchDist = d;
-      this.moved = true;
-      return;
-    }
-
-    if (this.dragging && this.lastSingle) {
-      const dx = p.x - this.lastSingle.x;
-      const dy = p.y - this.lastSingle.y;
-      if (Math.abs(dx) > 4 || Math.abs(dy) > 4) this.moved = true;
-      // 平移：除以 zoom 讓拖曳手感跟縮放程度一致
-      this.game.camX += dx / this.game.zoom;
-      this.game.camY += dy / this.game.zoom;
-      this.lastSingle = p;
-    }
-  }
-
-  onUp(e) {
-    const wasMoved = this.moved;
-    const p = this.pos(e);
-    this.pointers.delete(e.pointerId);
-
-    // 單指、且幾乎沒移動 -> 視為「點擊放置」
-    if (this.pointers.size === 0) {
-      if (this.dragging && !wasMoved) {
-        const { gx, gy } = this.renderer.canvasToGrid(p.x, p.y);
-        if (this.game.inBounds(gx, gy)) this.onPlace(gx, gy);
-      }
-      this.dragging = false;
-      this.lastSingle = null;
-      this.lastPinchDist = 0;
-    }
-  }
-
-  onWheel(e) {
-    e.preventDefault();
-    const factor = e.deltaY < 0 ? 1.1 : 1 / 1.1;
-    this.zoomAt(this.pos(e), factor);
-  }
-
-  // 以某個畫面點為中心縮放（縮放時該點底下的地圖位置保持不動）
-  zoomAt(center, factor) {
-    const g = this.game;
-    const newZoom = Math.max(0.4, Math.min(2.5, g.zoom * factor));
-    // 縮放前 center 底下對應的世界座標（世界座標 = px/zoom - cam）
-    const worldX = center.x / g.zoom - g.camX;
-    const worldY = center.y / g.zoom - g.camY;
-    g.zoom = newZoom;
-    g.camX = center.x / newZoom - worldX;
-    g.camY = center.y / newZoom - worldY;
-  }
-
-  pinchDist() {
-    const pts = [...this.pointers.values()];
-    if (pts.length < 2) return 0;
-    return Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
-  }
-
-  pinchCenter() {
-    const pts = [...this.pointers.values()];
-    return { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 };
+    });
   }
 }
