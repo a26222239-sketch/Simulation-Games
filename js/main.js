@@ -1,8 +1,5 @@
 // ============================================================
 // main.js — 程式進入點：把各部分組合起來並啟動
-//  - 建立遊戲狀態、繪圖器、輸入控制
-//  - 跑「畫面更新迴圈」與「每月結算計時器」
-//  - 處理工具列、選單、存檔/讀檔/匯出/匯入的 UI
 // ============================================================
 import { Game } from "./game.js";
 import { Renderer } from "./render.js";
@@ -11,8 +8,6 @@ import { BUILDINGS, TICK_MS } from "./config.js";
 
 const canvas = document.getElementById("game");
 const game = new Game();
-
-// 開局時若有自動存檔就先讀回來
 if (game.hasSave()) game.loadFromStorage();
 
 const renderer = new Renderer(canvas, game);
@@ -20,41 +15,63 @@ const renderer = new Renderer(canvas, game);
 // 目前選擇的工具，預設「道路」
 let currentTool = "road";
 
-// 點擊某格時：依目前工具蓋建築或拆除
+// 點擊某格時：依目前工具蓋 / 升級 / 拆
 const input = new Input(canvas, game, renderer, (gx, gy) => {
   let res;
-  if (currentTool === "bulldoze") {
-    res = game.bulldoze(gx, gy);
-  } else {
-    res = game.build(gx, gy, currentTool);
+  if (currentTool === "bulldoze") res = game.bulldoze(gx, gy);
+  else if (currentTool === "upgrade") res = game.upgrade(gx, gy);
+  else res = game.build(gx, gy, currentTool);
+  if (res && res.msg) toast(res.msg);
+  if (res && res.ok && currentTool !== "bulldoze" && currentTool !== "upgrade") {
+    // 蓋完一棟後立刻存檔保險
+    game.saveToStorage();
   }
-  if (!res.ok) toast(res.msg);
 });
 
 // ---------- 畫面更新迴圈 ----------
 function loop() {
+  updatePreview();   // 算出滑鼠下方要蓋/操作的範圍
   renderer.draw();
   updateStats();
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
 
-// ---------- 每月結算 ----------
-setInterval(() => {
-  game.tick();
-}, TICK_MS);
+// 依目前工具與 hover 格子，算出要高亮的範圍（綠=可行 / 紅=不可行）
+function updatePreview() {
+  const h = renderer.hover;
+  if (!h || !game.inBounds(h.gx, h.gy)) { renderer.hoverFootprint = null; return; }
 
-// ---------- 自動存檔（每 10 秒） ----------
-setInterval(() => {
-  game.saveToStorage();
-}, 10000);
-// 離開或切到背景時也存一次，避免進度遺失
+  if (currentTool === "upgrade" || currentTool === "bulldoze") {
+    const o = game.originTile(h.gx, h.gy);
+    if (game.isBuildingOrigin(o)) {
+      renderer.hoverFootprint = { gx: o.ox, gy: o.oy, w: o.w, h: o.h, ok: currentTool !== "bulldoze" ? o.level < 10 : true };
+    } else {
+      renderer.hoverFootprint = { gx: h.gx, gy: h.gy, w: 1, h: 1, ok: false };
+    }
+    return;
+  }
+
+  const def = BUILDINGS[currentTool];
+  if (!def || !def.buildable) { renderer.hoverFootprint = null; return; }
+  const { w, h: fh } = def.footprint;
+  const ok = game.areaFree(h.gx, h.gy, w, fh) &&
+             game.inBounds(h.gx + w - 1, h.gy + fh - 1) &&
+             game.money >= def.cost;
+  renderer.hoverFootprint = { gx: h.gx, gy: h.gy, w, h: fh, ok };
+}
+
+// ---------- 每月結算 ----------
+setInterval(() => game.tick(), TICK_MS);
+
+// ---------- 自動存檔 ----------
+setInterval(() => game.saveToStorage(), 10000);
 window.addEventListener("pagehide", () => game.saveToStorage());
-window.addEventListener("visibilitychange", () => {
+document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") game.saveToStorage();
 });
 
-// ---------- 更新上方資訊列 ----------
+// ---------- 上方資訊列 ----------
 const elMoney = document.getElementById("stat-money");
 const elPop = document.getElementById("stat-pop");
 const elIncome = document.getElementById("stat-income");
@@ -76,29 +93,27 @@ function selectTool(name) {
 }
 toolButtons.forEach((btn) => {
   btn.addEventListener("click", () => selectTool(btn.dataset.tool));
-  // 顯示建築價格在按鈕標題
   const def = BUILDINGS[btn.dataset.tool];
-  if (def && def.cost) btn.title = `${def.name}（$${def.cost}）`;
+  if (def && def.cost) {
+    const f = def.footprint;
+    btn.title = `${def.name}（$${def.cost}・${f.w}×${f.h}）`;
+  }
 });
 selectTool("road");
 
 // ---------- 右上選單 ----------
 const menuPanel = document.getElementById("menu-panel");
-document.getElementById("btn-menu").addEventListener("click", () => {
-  menuPanel.classList.toggle("hidden");
-});
+document.getElementById("btn-menu").addEventListener("click", () => menuPanel.classList.toggle("hidden"));
 
 document.getElementById("btn-save").addEventListener("click", () => {
   toast(game.saveToStorage() ? "已存檔 ✅" : "存檔失敗 ❌");
   menuPanel.classList.add("hidden");
 });
-
 document.getElementById("btn-load").addEventListener("click", () => {
   if (!game.hasSave()) return toast("找不到存檔");
   toast(game.loadFromStorage() ? "已讀取存檔 📂" : "讀檔失敗");
   menuPanel.classList.add("hidden");
 });
-
 document.getElementById("btn-new").addEventListener("click", () => {
   if (confirm("確定要重新開始嗎？目前的城市會被清除。")) {
     game.reset();
@@ -107,21 +122,15 @@ document.getElementById("btn-new").addEventListener("click", () => {
   }
   menuPanel.classList.add("hidden");
 });
-
-// 匯出：把存檔下載成 .json 檔案（換裝置 / 備份用）
 document.getElementById("btn-export").addEventListener("click", () => {
   const data = JSON.stringify(game.serialize(), null, 2);
   const blob = new Blob([data], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  a.href = url;
-  a.download = `mini-city-月${game.month}.json`;
-  a.click();
+  a.href = url; a.download = `mini-city-月${game.month}.json`; a.click();
   URL.revokeObjectURL(url);
   menuPanel.classList.add("hidden");
 });
-
-// 匯入：讀取使用者選的 .json 存檔
 const fileInput = document.getElementById("file-input");
 document.getElementById("btn-import").addEventListener("click", () => {
   fileInput.click();
@@ -134,18 +143,12 @@ fileInput.addEventListener("change", (e) => {
   reader.onload = () => {
     try {
       const data = JSON.parse(reader.result);
-      if (game.load(data)) {
-        game.saveToStorage();
-        toast("已匯入存檔 ⬆️");
-      } else {
-        toast("存檔格式不符");
-      }
-    } catch (err) {
-      toast("匯入失敗：檔案讀不懂");
-    }
+      if (game.load(data)) { game.saveToStorage(); toast("已匯入存檔 ⬆️"); }
+      else toast("存檔格式不符");
+    } catch (err) { toast("匯入失敗：檔案讀不懂"); }
   };
   reader.readAsText(file);
-  fileInput.value = ""; // 清空，讓同一個檔案可以再次匯入
+  fileInput.value = "";
 });
 
 // ---------- 浮動提示 ----------
