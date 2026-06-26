@@ -47,22 +47,32 @@ python3 -m http.server 8000   # 開 http://localhost:8000（用了 ES Modules，
 
 ---
 
+## 引擎：Phaser 3
+
+本作改用 **Phaser 3** 遊戲引擎驅動（場景、相機跟隨、輸入、主迴圈、畫面縮放），
+引擎本體放在 `vendor/phaser.min.js`（本地檔，不依賴外部 CDN）。
+**遊戲邏輯（`world.js`/`config.js`/`player.js`）與引擎無關**，所以日後要換引擎或加功能都好處理。
+
+目前畫面用 Phaser 的 `Graphics` 即時繪製（`draw.js`）。等你有了 GPT 立繪/精靈圖，
+可逐項改成 `this.load.spritesheet` + `this.add.sprite`（搭配 `this.anims` 走路動畫），
+深度遮擋用 `sprite.setDepth(gx+gy)`。
+
 ## 檔案結構
 
 ```
-index.html        畫面與 UI（HUD、搖桿、工具列）
-css/style.css     樣式（含手機響應式、彈窗、搖桿）
-js/config.js      規則資料：地圖、作物、動物、畜舍、衣服、外觀選項
-js/iso.js         等距座標換算
-js/player.js      主角：位置、面向、移動與碰撞、外觀
-js/world.js       世界狀態：農場/城鎮、作物、畜舍、動物、買賣、換日、存讀檔
-js/character.js   角色外觀：正面立繪 + 世界小人（捏臉/換裝視覺）
-js/render.js      2.5D 繪製（相機跟隨主角，含深度遮擋）
-js/input.js       操作：鍵盤/搖桿移動 + 點擊互動
-js/ui.js          彈出介面：捏臉/衣櫃/服飾店/種子店/建造畜牧
-js/main.js        進入點：組裝並啟動
-assets/           放你的立繪
+index.html          畫面與 UI（HUD、搖桿、工具列）
+css/style.css       樣式（含手機響應式、彈窗、搖桿）
+vendor/phaser.min.js Phaser 3 引擎本體
+js/config.js        規則資料：地圖、作物、動物、畜舍、衣服、外觀選項
+js/iso.js           等距座標換算
+js/player.js        主角：位置、面向、移動/尋路跟隨、外觀
+js/world.js         世界狀態：農場/城鎮、作物、畜舍、動物、買賣、換日、BFS尋路、存讀檔
+js/character.js     角色正面立繪（捏臉/衣櫃預覽，DOM canvas）
+js/draw.js          Phaser Graphics 繪製（地面/作物/建築/動物/主角，深度排序）
+js/ui.js            彈出介面：捏臉/衣櫃/服飾店/種子店/建造畜牧
+js/phaser-main.js   進入點：Phaser 場景、相機、輸入、HUD、組裝啟動
+assets/             放你的立繪
 ```
 
-> 備註：本作採場景(scene)概念（農場/城鎮），日後要再擴充（更多作物、季節、釣魚、
-> 多城鎮等）都好接。先前做過的「城市建造」「商店經營」版本保留在 git 歷史中。
+> 備註：採場景(scene)概念（農場/城鎮），日後擴充（更多作物、季節、釣魚、多城鎮等）都好接。
+> 先前的「城市建造」「商店經營」與「純 Canvas 農場」版本都保留在 git 歷史中。

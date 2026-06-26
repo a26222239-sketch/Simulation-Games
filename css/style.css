@@ -6,7 +6,9 @@ html, body {
   background: #0f1620; color: #e8eef5;
   user-select: none; -webkit-user-select: none; touch-action: none;
 }
-#game { display: block; width: 100vw; height: 100vh; }
+/* Phaser 自建的畫布鋪滿並置於 UI 之下 */
+canvas { position: fixed; inset: 0; z-index: 0; display: block; }
+#topbar, #toolbar { z-index: 10; }
 .hidden { display: none !important; }
 
 /* ===== 上方資訊列 ===== */

@@ -8,8 +8,6 @@
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
-  <canvas id="game"></canvas>
-
   <!-- 上方資訊列 -->
   <header id="topbar">
     <div class="stat"><span class="label">💰 資金</span><span id="stat-money" class="value">0</span></div>
@@ -48,6 +46,8 @@
 
   <div id="toast" class="hidden"></div>
   <input type="file" id="file-input" accept="application/json" hidden />
-  <script type="module" src="js/main.js"></script>
+  <!-- 先載入 Phaser 引擎（本地檔，不依賴外部 CDN），再載入遊戲 -->
+  <script src="vendor/phaser.min.js"></script>
+  <script type="module" src="js/phaser-main.js"></script>
 </body>
 </html>
