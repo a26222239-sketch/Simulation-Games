@@ -1,23 +1,23 @@
 // ============================================================
-// render.js — 把遊戲狀態畫到 canvas 上（2.5D 等距畫面）
-// 先畫所有地面菱形，再依「由後往前」順序畫建築量體（支援多格佔地）。
-// 等級會影響量體高度、顏色亮度，並在頂端標示 Lv 數字。
+// render.js — 把商店場景畫到 canvas（2.5D 等距）
+// 順序：① 先鋪所有地板/門（平面）
+//       ② 把「會擋住視線的設施(牆/貨架/櫃台)」與「顧客」一起依深度排序後再畫，
+//          這樣站在貨架後面的顧客會被正確遮住。
 //
-// ★ 換成 GPT 立繪：把圖片放到 assets/<sprite>_<等級>.png，
-//   程式會自動載入並改用 drawImage（見 loadSprite / drawBuilding）。
+// ★ 換立繪：assets/<sprite>.png 存在就自動改用圖片（設施）；
+//   顧客走路精靈圖放 assets/customer.png（4方向×4走路格）自動套用。
 // ============================================================
-import { TILE_W, TILE_H, BUILDINGS } from "./config.js";
+import { TILE_W, TILE_H, TILES, CUSTOMER } from "./config.js";
 import { gridToScreen } from "./iso.js";
 
 export class Renderer {
-  constructor(canvas, game) {
+  constructor(canvas, store) {
     this.canvas = canvas;
     this.ctx = canvas.getContext("2d");
-    this.game = game;
-    this.hover = null;       // 目前指著的格子 {gx, gy}
-    this.hoverFootprint = null; // 預覽要蓋的範圍（由 main.js 設定目前工具）
-    this.previewTool = null;
-    this.sprites = {};       // 立繪快取： key "house_3" -> Image
+    this.store = store;
+    this.hover = null;       // 目前指著的格子 {gx,gy}
+    this.previewType = null; // 目前要放置的設施種類（由 main.js 設定）
+    this.sprites = {};
     this.dpr = Math.min(window.devicePixelRatio || 1, 2);
     this.resize();
     window.addEventListener("resize", () => this.resize());
@@ -30,218 +30,178 @@ export class Renderer {
     this.canvas.style.width = w + "px";
     this.canvas.style.height = h + "px";
     this.viewW = w; this.viewH = h;
-    if (!this.game._cameraInited) {
-      const center = gridToScreen(this.game.size / 2, this.game.size / 2);
-      this.game.camX = w / 2 - center.x;
-      this.game.camY = h / 2 - center.y;
-      this.game._cameraInited = true;
+    if (!this.store._cameraInited) {
+      const center = gridToScreen(this.store.w / 2, this.store.h / 2);
+      this.store.camX = w / 2 - center.x;
+      this.store.camY = h / 2 - center.y + 40;
+      this.store._cameraInited = true;
     }
   }
 
   worldToCanvas(gx, gy) {
     const s = gridToScreen(gx, gy);
-    return {
-      x: (s.x + this.game.camX) * this.game.zoom,
-      y: (s.y + this.game.camY) * this.game.zoom,
-    };
+    return { x: (s.x + this.store.camX) * this.store.zoom, y: (s.y + this.store.camY) * this.store.zoom };
   }
-
   canvasToGrid(px, py) {
-    const wx = px / this.game.zoom - this.game.camX;
-    const wy = py / this.game.zoom - this.game.camY;
-    const a = wx / (TILE_W / 2);
-    const b = wy / (TILE_H / 2);
+    const wx = px / this.store.zoom - this.store.camX;
+    const wy = py / this.store.zoom - this.store.camY;
+    const a = wx / (TILE_W / 2), b = wy / (TILE_H / 2);
     return { gx: Math.floor((a + b) / 2), gy: Math.floor((b - a) / 2) };
   }
 
-  // 嘗試取得某建築某等級的立繪；沒有圖就回傳 null（改用程式畫的方塊）
-  getSprite(spriteName, level) {
-    if (!spriteName) return null;
-    const key = `${spriteName}_${level}`;
-    if (this.sprites[key] === undefined) {
-      // 第一次：嘗試載入，先標記 null 避免重複載
-      this.sprites[key] = null;
+  getSprite(name) {
+    if (!name) return null;
+    if (this.sprites[name] === undefined) {
+      this.sprites[name] = null;
       const img = new Image();
-      img.onload = () => { this.sprites[key] = img; };
-      img.onerror = () => { this.sprites[key] = null; }; // 沒這張圖就維持方塊
-      img.src = `assets/${key}.png`;
+      img.onload = () => { this.sprites[name] = img; };
+      img.onerror = () => { this.sprites[name] = null; };
+      img.src = `assets/${name}.png`;
     }
-    return this.sprites[key];
+    return this.sprites[name];
   }
 
   draw() {
     const ctx = this.ctx;
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
-    const g = ctx.createLinearGradient(0, 0, 0, this.viewH);
-    g.addColorStop(0, "#16202c");
-    g.addColorStop(1, "#0c121a");
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, this.viewW, this.viewH);
+    const bg = ctx.createLinearGradient(0, 0, 0, this.viewH);
+    bg.addColorStop(0, "#1a232e"); bg.addColorStop(1, "#0c121a");
+    ctx.fillStyle = bg; ctx.fillRect(0, 0, this.viewW, this.viewH);
 
-    const game = this.game;
+    const store = this.store;
 
-    // 1) 先畫所有地面菱形（含 hover 高亮 / 建造預覽）
-    for (let sum = 0; sum <= 2 * (game.size - 1); sum++) {
-      for (let gx = 0; gx < game.size; gx++) {
-        const gy = sum - gx;
-        if (gy < 0 || gy >= game.size) continue;
-        this.drawGround(gx, gy);
+    // ① 地板層：每格先鋪地板色；門畫成門色
+    for (let sum = 0; sum <= store.w + store.h; sum++) {
+      for (let cx = 0; cx < store.w; cx++) {
+        const cy = sum - cx;
+        if (cy < 0 || cy >= store.h) continue;
+        const t = store.tile(cx, cy);
+        const isFloorLike = TILES[t.type].height === 0;
+        const color = t.type === "door" ? TILES.door.color : TILES.floor.color;
+        this.drawFlat(cx, cy, color, "rgba(0,0,0,.12)");
+        // 預覽高亮（要放置時）
+        if (this.hover && this.hover.gx === cx && this.hover.gy === cy && this.previewType) {
+          this.drawFlat(cx, cy, "rgba(120,220,140,.45)", "rgba(255,255,255,.7)");
+        }
       }
     }
 
-    // 2) 收集所有建築主格，由後往前（ox+oy 小的先畫）再畫量體
-    const buildings = [];
-    game.eachBuilding((t) => buildings.push(t));
-    buildings.sort((a, b) => (a.ox + a.oy) - (b.ox + b.oy));
-    for (const t of buildings) this.drawBuilding(t);
-  }
-
-  // 判斷某格是否落在「建造預覽範圍」內
-  inPreview(gx, gy) {
-    const fp = this.hoverFootprint;
-    if (!fp) return false;
-    return gx >= fp.gx && gx < fp.gx + fp.w && gy >= fp.gy && gy < fp.gy + fp.h;
-  }
-
-  drawGround(gx, gy) {
-    const p = this.worldToCanvas(gx, gy);
-    const margin = 220;
-    if (p.x < -margin || p.x > this.viewW + margin ||
-        p.y < -margin || p.y > this.viewH + margin) return;
-    const z = this.game.zoom;
-
-    let fill = BUILDINGS.grass.color, stroke = "#2c5a2c";
-    if (this.inPreview(gx, gy)) {
-      // 預覽：能蓋綠色、不能蓋紅色
-      fill = this.hoverFootprint.ok ? "#5bb36a" : "#b65151";
-      stroke = "rgba(255,255,255,.5)";
+    // ② 設施 + 顧客一起依深度排序
+    const items = [];
+    for (let cy = 0; cy < store.h; cy++)
+      for (let cx = 0; cx < store.w; cx++) {
+        const t = store.tile(cx, cy);
+        if (TILES[t.type].height > 0) items.push({ depth: cx + cy, kind: "fixture", cx, cy, t });
+      }
+    for (const c of store.customers) items.push({ depth: c.gx + c.gy + 0.5, kind: "cust", c });
+    items.sort((a, b) => a.depth - b.depth);
+    for (const it of items) {
+      if (it.kind === "fixture") this.drawFixture(it.cx, it.cy, it.t);
+      else this.drawCustomer(it.c);
     }
-    this.drawDiamondTop(p.x, p.y, z, fill, stroke);
   }
 
   diamondPath(cx, cy, z) {
-    const hw = (TILE_W / 2) * z, hh = (TILE_H / 2) * z;
-    const ctx = this.ctx;
+    const hw = (TILE_W / 2) * z, hh = (TILE_H / 2) * z, ctx = this.ctx;
     ctx.beginPath();
-    ctx.moveTo(cx, cy - hh);
-    ctx.lineTo(cx + hw, cy);
-    ctx.lineTo(cx, cy + hh);
-    ctx.lineTo(cx - hw, cy);
-    ctx.closePath();
+    ctx.moveTo(cx, cy - hh); ctx.lineTo(cx + hw, cy);
+    ctx.lineTo(cx, cy + hh); ctx.lineTo(cx - hw, cy); ctx.closePath();
+  }
+  drawFlat(cx, cy, fill, stroke) {
+    const p = this.worldToCanvas(cx, cy), z = this.store.zoom;
+    const m = 200;
+    if (p.x < -m || p.x > this.viewW + m || p.y < -m || p.y > this.viewH + m) return;
+    this.diamondPath(p.x, p.y, z);
+    this.ctx.fillStyle = fill; this.ctx.fill();
+    this.ctx.lineWidth = 1; this.ctx.strokeStyle = stroke; this.ctx.stroke();
   }
 
-  drawDiamondTop(cx, cy, z, fill, stroke) {
-    const ctx = this.ctx;
-    this.diamondPath(cx, cy, z);
-    ctx.fillStyle = fill;
-    ctx.fill();
-    ctx.lineWidth = 1;
-    ctx.strokeStyle = stroke;
-    ctx.stroke();
-  }
-
-  // 計算一棟建築佔地的「頂面四角」螢幕座標（地面高度，未含量體高度）
-  footprintCorners(t) {
-    const z = this.game.zoom;
+  drawFixture(cx, cy, t) {
+    const def = TILES[t.type], ctx = this.ctx, z = this.store.zoom;
+    const p = this.worldToCanvas(cx, cy);
     const hw = (TILE_W / 2) * z, hh = (TILE_H / 2) * z;
-    const { ox, oy, w, h } = t;
-    const north = this.worldToCanvas(ox, oy);             // 上
-    const east = this.worldToCanvas(ox + w - 1, oy);      // 右
-    const south = this.worldToCanvas(ox + w - 1, oy + h - 1); // 下
-    const west = this.worldToCanvas(ox, oy + h - 1);      // 左
-    return {
-      n: { x: north.x, y: north.y - hh },
-      e: { x: east.x + hw, y: east.y },
-      s: { x: south.x, y: south.y + hh },
-      w: { x: west.x - hw, y: west.y },
-    };
-  }
+    const n = { x: p.x, y: p.y - hh }, e = { x: p.x + hw, y: p.y };
+    const s = { x: p.x, y: p.y + hh }, w = { x: p.x - hw, y: p.y };
 
-  drawBuilding(t) {
-    const def = BUILDINGS[t.type];
-    const ctx = this.ctx;
-    const c = this.footprintCorners(t);
-
-    // 視窗外略過
-    if (c.s.y < -300 || c.n.y > this.viewH + 300 ||
-        c.e.x < -300 || c.w.x > this.viewW + 300) return;
-
-    // 道路：只畫平面頂面（不長高）
-    if (t.type === "road") {
-      ctx.beginPath();
-      ctx.moveTo(c.n.x, c.n.y); ctx.lineTo(c.e.x, c.e.y);
-      ctx.lineTo(c.s.x, c.s.y); ctx.lineTo(c.w.x, c.w.y); ctx.closePath();
-      ctx.fillStyle = this.shade(def.color, (t.level - 1) * 4);
-      ctx.fill();
-      ctx.strokeStyle = def.side; ctx.lineWidth = 1; ctx.stroke();
-      this.drawLevelTag(t, c, 0);
-      return;
-    }
-
-    // 若有立繪就用圖片
-    const img = this.getSprite(def.sprite, t.level);
+    const img = this.getSprite(def.sprite);
     if (img) {
-      const wpx = c.e.x - c.w.x;             // 佔地在螢幕上的寬
-      const hpx = wpx * (img.height / img.width);
-      const baseY = c.s.y;                   // 前緣底部
-      const cx = (c.n.x + c.s.x) / 2;
-      ctx.drawImage(img, cx - wpx / 2, baseY - hpx, wpx, hpx);
-      this.drawLevelTag(t, c, hpx * 0.9);
+      const wpx = (e.x - w.x), hpx = wpx * (img.height / img.width);
+      ctx.drawImage(img, p.x - wpx / 2, s.y - hpx, wpx, hpx);
       return;
     }
 
-    // 否則用程式畫的立體量體（等級越高越高、顏色越亮）
-    const bh = this.game.heightOf(t) * TILE_W * this.game.zoom;
-    const top = this.shade(def.color, (t.level - 1) * 6);
-    const left = def.side;
-    const right = this.shade(def.side, 20);
-
-    // 左側面：west → south
-    ctx.beginPath();
-    ctx.moveTo(c.w.x, c.w.y); ctx.lineTo(c.s.x, c.s.y);
-    ctx.lineTo(c.s.x, c.s.y - bh); ctx.lineTo(c.w.x, c.w.y - bh); ctx.closePath();
-    ctx.fillStyle = left; ctx.fill();
-
-    // 右側面：south → east
-    ctx.beginPath();
-    ctx.moveTo(c.s.x, c.s.y); ctx.lineTo(c.e.x, c.e.y);
-    ctx.lineTo(c.e.x, c.e.y - bh); ctx.lineTo(c.s.x, c.s.y - bh); ctx.closePath();
-    ctx.fillStyle = right; ctx.fill();
-
-    // 頂面（四角往上平移 bh）
-    ctx.beginPath();
-    ctx.moveTo(c.n.x, c.n.y - bh); ctx.lineTo(c.e.x, c.e.y - bh);
-    ctx.lineTo(c.s.x, c.s.y - bh); ctx.lineTo(c.w.x, c.w.y - bh); ctx.closePath();
-    ctx.fillStyle = top; ctx.fill();
-    ctx.lineWidth = 1; ctx.strokeStyle = "rgba(0,0,0,.25)"; ctx.stroke();
-
-    this.drawLevelTag(t, c, bh);
+    const bh = def.height * TILE_W * z;
+    // 左面
+    ctx.beginPath(); ctx.moveTo(w.x, w.y); ctx.lineTo(s.x, s.y);
+    ctx.lineTo(s.x, s.y - bh); ctx.lineTo(w.x, w.y - bh); ctx.closePath();
+    ctx.fillStyle = def.side; ctx.fill();
+    // 右面
+    ctx.beginPath(); ctx.moveTo(s.x, s.y); ctx.lineTo(e.x, e.y);
+    ctx.lineTo(e.x, e.y - bh); ctx.lineTo(s.x, s.y - bh); ctx.closePath();
+    ctx.fillStyle = this.shade(def.side, 18); ctx.fill();
+    // 頂
+    ctx.beginPath(); ctx.moveTo(n.x, n.y - bh); ctx.lineTo(e.x, e.y - bh);
+    ctx.lineTo(s.x, s.y - bh); ctx.lineTo(w.x, w.y - bh); ctx.closePath();
+    ctx.fillStyle = def.color; ctx.fill();
+    ctx.lineWidth = 1; ctx.strokeStyle = "rgba(0,0,0,.2)"; ctx.stroke();
   }
 
-  // 在建築頂端標示等級（住宅也顯示人口）
-  drawLevelTag(t, c, bh) {
-    const z = this.game.zoom;
-    if (z < 0.55) return;
+  // 顧客：有精靈圖就用圖，否則畫個會走路的小人
+  drawCustomer(c) {
+    const ctx = this.ctx, z = this.store.zoom;
+    const p = this.worldToCanvas(c.gx, c.gy);
+
+    // 影子
+    ctx.beginPath();
+    ctx.ellipse(p.x, p.y + 2 * z, 9 * z, 4 * z, 0, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(0,0,0,.28)"; ctx.fill();
+
+    const sheet = this.getSprite("customer");
+    if (sheet) {
+      const fw = sheet.width / 4, fh = sheet.height / 4;       // 4格×4方向
+      const dw = 30 * z, dh = dw * (fh / fw);
+      ctx.drawImage(sheet, c.frame * fw, c.dir * fh, fw, fh, p.x - dw / 2, p.y - dh, dw, dh);
+      return;
+    }
+
+    // 內建小人
+    const bob = c.moving ? Math.abs(Math.sin(c.animTime * 9)) * 2 * z : 0;
+    const footY = p.y - bob;
+    const bodyH = 15 * z, bodyW = 9 * z, headR = 5 * z;
+    // 腿（走路時前後擺動）
+    const sw = c.moving ? Math.sin(c.animTime * 13) * 3 * z : 0;
+    ctx.strokeStyle = "#39424d"; ctx.lineWidth = 2.5 * z; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(p.x, footY - bodyH); ctx.lineTo(p.x - 3 * z + sw, footY); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(p.x, footY - bodyH); ctx.lineTo(p.x + 3 * z - sw, footY); ctx.stroke();
+    // 身體
+    this.roundRect(p.x - bodyW / 2, footY - bodyH - bodyH, bodyW, bodyH + 2 * z, 3 * z);
+    ctx.fillStyle = c.color; ctx.fill();
+    // 頭
+    ctx.beginPath(); ctx.arc(p.x, footY - bodyH - bodyH - headR + 2 * z, headR, 0, Math.PI * 2);
+    ctx.fillStyle = "#f1c9a5"; ctx.fill();
+    // 結帳中冒個 $ 提示
+    if (c.state === "paying" && z > 0.5) {
+      ctx.font = `${Math.round(12 * z)}px system-ui`; ctx.textAlign = "center";
+      ctx.fillStyle = "#ffe082";
+      ctx.fillText("$", p.x, footY - bodyH * 2 - headR * 2 - 2 * z);
+    }
+  }
+
+  roundRect(x, y, w, h, r) {
     const ctx = this.ctx;
-    const cx = (c.n.x + c.s.x) / 2;
-    const topY = Math.min(c.n.y, c.s.y) - bh - 6 * z;
-    let label = "Lv." + (t.level || 1);
-    if (t.type === "house" && t.residents > 0) label += "  👥" + t.residents;
-    ctx.font = `${Math.round(11 * z)}px system-ui`;
-    ctx.textAlign = "center";
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = "rgba(0,0,0,.6)";
-    ctx.strokeText(label, cx, topY);
-    ctx.fillStyle = "#fff";
-    ctx.fillText(label, cx, topY);
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
   }
 
   shade(hex, amt) {
     const n = parseInt(hex.slice(1), 16);
     let r = (n >> 16) + amt, g = ((n >> 8) & 255) + amt, b = (n & 255) + amt;
-    r = Math.max(0, Math.min(255, r));
-    g = Math.max(0, Math.min(255, g));
-    b = Math.max(0, Math.min(255, b));
+    r = Math.max(0, Math.min(255, r)); g = Math.max(0, Math.min(255, g)); b = Math.max(0, Math.min(255, b));
     return `rgb(${r},${g},${b})`;
   }
 }
