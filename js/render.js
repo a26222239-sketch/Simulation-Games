@@ -45,8 +45,8 @@ export class Renderer {
     this.updateCam();
 
     const world = this.world, s = world.scene();
-    // 主角面前那格（操作目標）高亮
-    const fc = world.player.facingCell();
+    // 高亮：自動尋路時亮「目標格」，否則亮主角面前那格
+    const fc = world.player.targetCell || world.player.facingCell();
 
     // ① 地面
     for (let sum = 0; sum <= s.w + s.h; sum++)

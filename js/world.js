@@ -71,9 +71,47 @@ export class World {
     const cx = Math.round(fx), cy = Math.round(fy);
     const t = this.tile(cx, cy);
     if (!t) return false;
-    if (GROUND[t.g].solid) return false; // 水等
-    if (t.b) return false;               // 畜舍/店面擋路
+    if (GROUND[t.g].solid) return false;  // 水等
+    if (t.b != null) return false;        // 畜舍/店面擋路（注意 id 可能為 0）
     return true;
+  }
+
+  neighbors4(cx, cy) { return [[1,0],[-1,0],[0,1],[0,-1]].map(([dx, dy]) => ({ cx: cx + dx, cy: cy + dy })); }
+
+  // 從主角目前位置，找一條到「目標格(tx,ty)旁(或其上)」的路徑。
+  // 目標可走 → 走到它上面；不可走(店面/畜舍/水) → 走到相鄰可走格。走不到回 null。
+  pathToCell(tx, ty) {
+    const s = this.scene();
+    const start = { cx: Math.round(this.player.fx), cy: Math.round(this.player.fy) };
+    // 一律停在目標「旁邊」再執行（更符合農場操作，也不會站在作物上）。
+    // 若四周都不可走、但目標本身可走，才退而走到目標上。
+    let goals = this.neighbors4(tx, ty).filter((n) => this.walkable(n.cx, n.cy));
+    if (!goals.length && this.walkable(tx, ty)) goals = [{ cx: tx, cy: ty }];
+    if (!goals.length) return null;
+    const key = (x, y) => y * s.w + x;
+    const goalSet = new Set(goals.map((g) => key(g.cx, g.cy)));
+    if (goalSet.has(key(start.cx, start.cy))) return [start];
+
+    const prev = new Map(), seen = new Set([key(start.cx, start.cy)]);
+    let q = [start];
+    while (q.length) {
+      const nq = [];
+      for (const c of q) {
+        for (const d of this.neighbors4(c.cx, c.cy)) {
+          const k = key(d.cx, d.cy);
+          if (seen.has(k) || !this.walkable(d.cx, d.cy)) continue;
+          seen.add(k); prev.set(k, c);
+          if (goalSet.has(k)) {
+            const path = [{ cx: d.cx, cy: d.cy }]; let p = c;
+            while (p) { path.push({ cx: p.cx, cy: p.cy }); p = prev.get(key(p.cx, p.cy)); }
+            return path.reverse();
+          }
+          nq.push(d);
+        }
+      }
+      q = nq;
+    }
+    return null;
   }
 
   // ---- 場景切換 ----
@@ -99,9 +137,9 @@ export class World {
     if (tool === "interact") {
       // 出貨箱
       if (this.bin && cx === this.bin.x && cy === this.bin.y) return this.sellAll();
-      // 撿動物產物
-      const a = this.animalAt(cx, cy);
-      if (a && a.hasProduct) { this.inv(ANIMALS[a.type].product); a.hasProduct = false; return { msg: `撿到${ANIMALS[a.type].productName} ✋` }; }
+      // 撿動物產物（找主角附近有產物的動物）
+      const a = this.animals.find((an) => an.hasProduct && Math.hypot(an.fx - this.player.fx, an.fy - this.player.fy) < 1.5);
+      if (a) { this.inv(ANIMALS[a.type].product); a.hasProduct = false; return { msg: `撿到${ANIMALS[a.type].productName} ✋` }; }
       // 收成
       if (t.crop && t.crop.stage >= CROPS[t.crop.type].maxStage) {
         this.inv(t.crop.type); t.crop = null; t.g = "soil";
@@ -146,7 +184,7 @@ export class World {
     const { w, h } = def.footprint;
     for (let y = cy; y < cy + h; y++) for (let x = cx; x < cx + w; x++) {
       const t = this.tileOf(this.farm, x, y);
-      if (!t || t.g === "water" || t.b || t.crop) return false;
+      if (!t || t.g === "water" || t.b != null || t.crop) return false;
     }
     return true;
   }

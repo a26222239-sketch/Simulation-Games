@@ -28,6 +28,7 @@ const input = new Input(
 );
 
 function onTap(cx, cy) {
+  // 建造是「直接放置」，不需要走過去
   if (pendingBuild) {
     const r = world.build(pendingBuild, cx, cy);
     if (r && r.msg) toast(r.msg);
@@ -35,13 +36,23 @@ function onTap(cx, cy) {
     refresh();
     return;
   }
+  // 其餘：先尋路走到目標旁，抵達才執行（中途取消/走不到就不執行）
+  const path = world.pathToCell(cx, cy);
+  if (!path) { toast("走不過去"); return; }
+  const tool = currentTool, scene = world.active;
+  world.player.setPath(path, () => doAction(scene, tool, cx, cy), { cx, cy });
+}
+
+// 抵達目標旁後實際執行的動作
+function doAction(scene, tool, cx, cy) {
+  if (scene !== world.active) return; // 中途切換場景就不執行
   if (world.active === "town") {
     const r = world.actTown(cx, cy);
     if (r.openShop) ui.openShop(r.openShop);
     else if (r.msg) toast(r.msg);
     return;
   }
-  const r = world.act(currentTool, cx, cy);
+  const r = world.act(tool, cx, cy);
   if (r && r.msg) toast(r.msg);
   refresh();
 }
