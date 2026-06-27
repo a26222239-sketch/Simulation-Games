@@ -48,20 +48,22 @@ python3 tools/removebg.py 生圖資料夾/ assets/       # 批次
 
 ---
 
-## 3. normalize.py（每格貼齊底部，避免懸空/陷地）
+## 3. normalize.py（縮到塞進格子＋貼底，避免切頭/懸空/陷地）
 
-去背後**務必**跑這步：把精靈圖每一格的內容貼齊格子底部，動物的腳才會落在同一基準線，
-切換走路/進食/睡覺時不會忽高忽低。
+去背後**務必**跑這步：把每格內容**等比例縮到塞進格子**(統一縮放、不變形、不會切到頭)、
+水平置中、貼齊底部，動物的腳/陰影才會落在同一基準線。**這步會順便做縮放與輸出尺寸**，
+所以前面 `cutout.py` 不用加 `--resize`。
 ```bash
-python3 tools/normalize.py walk.png walk.png --grid 4x4   # 走路(4列×4欄)
-python3 tools/normalize.py eat.png eat.png --grid 1x4     # 進食/睡覺(1列×4欄)
+python3 tools/normalize.py walk.png  assets/animal_lion.png       --grid 4x4 --cell 48   # 走路→192x192
+python3 tools/normalize.py eat.png   assets/animal_lion_eat.png   --grid 1x4 --cell 48   # 進食/睡覺/待機→192x48
 ```
+`--cell` 是該動物的單格像素(獅子48；其他動物見 docs/ART_PROMPTS.md 體型表)。
 
 ---
 
 ## 建議流程（搭配 docs/ART_PROMPTS.md）
 
-1. 叫 AI 畫**純白背景**的各方向走路格（或進食/睡覺單排）。
-2. `cutout.py --bg FFFFFF --resize ...` 去背並縮到對應尺寸。
-3. `normalize.py --grid RxC` 把每格貼齊底部（避免懸空/陷地）。
-4. 命名 `animal_<id>.png` / `animal_<id>_eat.png` / `animal_<id>_sleep.png` 放進 `assets/`，遊戲自動採用並播放動畫。
+1. 叫 AI 畫**純白背景、自帶陰影**的各方向走路格（或進食/睡覺/待機單排）。
+2. `cutout.py --bg FFFFFF`（去背，不用 --resize）。
+3. `normalize.py --grid RxC --cell N`（縮到塞進格子＋貼底；同時決定輸出尺寸）。
+4. 命名 `animal_<id>.png` / `_eat` / `_sleep` / `_idle` 放進 `assets/`，遊戲自動採用並播放動畫。
