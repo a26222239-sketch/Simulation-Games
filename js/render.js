@@ -9,6 +9,7 @@ import { TILE_W, TILE_H, GROUND, STRUCTURES, ANIMALS } from "./config.js";
 import { gridToScreen } from "./iso.js";
 
 const HW = TILE_W / 2, HH = TILE_H / 2;
+const ASSET_VER = 3; // 換 assets 圖後 +1，自動破壞快取載新圖
 const toInt = (h) => parseInt(h.slice(1), 16);
 const ROW = { down: 0, left: 1, right: 2, up: 3 }; // 精靈圖方向列順序：前/左/右/後
 
@@ -16,19 +17,21 @@ function diamondPts(g, cx, cy) { g.fillPoints([{ x: cx, y: cy - HH }, { x: cx + 
 
 export class Renderer {
   // 在 scene.preload() 裡呼叫：嘗試載入玩家提供的圖（失敗不會中斷遊戲）
+  // ★ 換了 assets 裡的圖後，把 ASSET_VER 加 1，就會自動載新圖(破壞快取)
   static preload(scene) {
+    const v = "?v=" + ASSET_VER;
     scene.load.on("loaderror", () => {}); // 沒有對應圖檔就略過，改用佔位貼圖
     for (const id of Object.keys(ANIMALS)) {
       const fr = ANIMALS[id].frame || 64; // 單格像素依動物體型(獅子64基準)
-      scene.load.spritesheet("animal_" + id, `assets/animal_${id}.png`, { frameWidth: fr, frameHeight: fr });        // 走路(4方向×4格)
-      scene.load.spritesheet("animal_" + id + "_idle", `assets/animal_${id}_idle.png`, { frameWidth: fr, frameHeight: fr });   // 待機(單排，可選)
-      scene.load.spritesheet("animal_" + id + "_eat", `assets/animal_${id}_eat.png`, { frameWidth: fr, frameHeight: fr });   // 進食(單排)
-      scene.load.spritesheet("animal_" + id + "_sleep", `assets/animal_${id}_sleep.png`, { frameWidth: fr, frameHeight: fr }); // 睡覺(單排)
+      scene.load.spritesheet("animal_" + id, `assets/animal_${id}.png${v}`, { frameWidth: fr, frameHeight: fr });        // 走路(4方向×4格)
+      scene.load.spritesheet("animal_" + id + "_idle", `assets/animal_${id}_idle.png${v}`, { frameWidth: fr, frameHeight: fr });   // 待機(單排，可選)
+      scene.load.spritesheet("animal_" + id + "_eat", `assets/animal_${id}_eat.png${v}`, { frameWidth: fr, frameHeight: fr });   // 進食(單排)
+      scene.load.spritesheet("animal_" + id + "_sleep", `assets/animal_${id}_sleep.png${v}`, { frameWidth: fr, frameHeight: fr }); // 睡覺(單排)
     }
-    scene.load.spritesheet("visitor", "assets/visitor.png", { frameWidth: 48, frameHeight: 64 });
-    scene.load.image("cafe", "assets/cafe.png");
-    scene.load.image("souvenir", "assets/souvenir.png");
-    scene.load.image("tree", "assets/tree.png");
+    scene.load.spritesheet("visitor", `assets/visitor.png${v}`, { frameWidth: 48, frameHeight: 64 });
+    scene.load.image("cafe", `assets/cafe.png${v}`);
+    scene.load.image("souvenir", `assets/souvenir.png${v}`);
+    scene.load.image("tree", `assets/tree.png${v}`);
   }
 
   constructor(scene, zoo) {
