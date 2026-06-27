@@ -6,7 +6,7 @@
 // ============================================================
 import { Zoo } from "./zoo.js";
 import { UI } from "./ui.js";
-import { drawGround, drawDynamic } from "./draw.js";
+import { Renderer } from "./render.js";
 import { gridToScreen } from "./iso.js";
 import { TILE_W, TILE_H, STRUCTURES } from "./config.js";
 
@@ -20,15 +20,14 @@ let pendingSpecies = null;   // 獸欄要放的動物
 let sceneRef = null;
 let hover = null;            // {gx,gy}
 
-const refresh = (msg) => { updateHUD(); zoo.save(); if (sceneRef) sceneRef.groundDirty = true; if (msg) toast(msg); };
+const refresh = (msg) => { updateHUD(); zoo.save(); if (sceneRef && sceneRef.renderer) sceneRef.renderer.groundDirty = true; if (msg) toast(msg); };
 
 class MainScene extends Phaser.Scene {
   constructor() { super("main"); }
+  preload() { Renderer.preload(this); }
   create() {
     sceneRef = this;
-    this.groundG = this.add.graphics().setDepth(0);
-    this.dynG = this.add.graphics().setDepth(10);
-    this.groundDirty = true;
+    this.renderer = new Renderer(this, zoo);
     const cam = this.cameras.main;
     cam.setZoom(1);
     const c = gridToScreen(zoo.entrance.cx, zoo.h - 5); cam.centerOn(c.x, c.y); // 對準入口起始區
@@ -82,8 +81,9 @@ class MainScene extends Phaser.Scene {
   update(t, deltaMs) {
     const dt = Math.min(0.05, deltaMs / 1000);
     zoo.update(dt);
-    if (this.groundDirty) { drawGround(this.groundG, zoo); this.groundDirty = false; }
-    drawDynamic(this.dynG, zoo, previewState());
+    if (this.renderer.groundDirty) { this.renderer.redrawGround(); this.renderer.groundDirty = false; }
+    this.renderer.drawPreview(previewState());
+    this.renderer.sync();
     updateHUD();
   }
 }
