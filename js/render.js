@@ -209,6 +209,8 @@ export class Renderer {
       else if (a.state === "sleep" && this.hasImg(base + "_sleep")) key = base + "_sleep";
       else if (a.state === "idle" && a.yawning && this.hasImg(base + "_idle")) key = base + "_idle"; // 只有打哈欠那一下用待機動畫
       if (sp.texture.key !== key) sp.setTexture(key);
+      // 進食/睡覺/待機是單方向圖(原圖朝左)；動物面向右時水平翻轉，左右都有
+      sp.flipX = (key !== base && a.dir === "right");
       const p = gridToScreen(a.fx, a.fy);
       const bob = (!this.animated(base) && a.moving) ? Math.abs(Math.sin(a.frame * 1.6)) * 2 : 0;
       sp.setPosition(p.x, p.y - bob).setDepth(a.fx + a.fy);
