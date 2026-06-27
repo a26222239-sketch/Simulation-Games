@@ -23,7 +23,7 @@ def hexrgb(h):
     return tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
 
 
-def cut(inp, outp, bg, fuzz, resize, holes_frac):
+def cut(inp, outp, bg, fuzz, resize):
     im = Image.open(inp).convert("RGBA"); W, H = im.size; px = im.load()
     tol = fuzz * 255
     def isbg(x, y):
@@ -41,46 +41,10 @@ def cut(inp, outp, bg, fuzz, resize, holes_frac):
             if 0 <= nx < W and 0 <= ny < H:
                 i = ny*W+nx
                 if not vis[i] and isbg(nx, ny): vis[i] = 1; dq.append((nx, ny))
-    # 邊緣相連的背景設透明
     for y in range(H):
         for x in range(W):
             if vis[y*W+x]:
                 r, g, b, a = px[x, y]; px[x, y] = (r, g, b, 0)
-
-    # 移除「被包住的小面積背景塊」(例如兩腿間殘白)
-    #  ‧ 大片同色(白肚)保留：面積 > limit 不刪
-    #  ‧ 眼白保留：若白塊周圍大多是「深色」(瞳孔/描邊)，視為五官，不刪
-    def dark(x, y):
-        r, g, b, a = px[x, y]
-        return a > 20 and (0.3*r + 0.59*g + 0.11*b) < 90
-    if holes_frac > 0:
-        limit = holes_frac * W * H
-        seen = bytearray(W*H)
-        for sy in range(H):
-            for sx in range(W):
-                si = sy*W+sx
-                if vis[si] or seen[si] or not isbg(sx, sy):
-                    continue
-                comp = []; stack = [(sx, sy)]; seen[si] = 1
-                bdark = btot = 0
-                while stack:
-                    x, y = stack.pop(); comp.append((x, y))
-                    for nx, ny in ((x+1,y),(x-1,y),(x,y+1),(x,y-1)):
-                        if not (0 <= nx < W and 0 <= ny < H):
-                            continue
-                        j = ny*W+nx
-                        if not vis[j] and isbg(nx, ny):
-                            if not seen[j]: seen[j] = 1; stack.append((nx, ny))
-                        else:  # 邊界(角色像素)
-                            btot += 1
-                            if dark(nx, ny): bdark += 1
-                if len(comp) > limit:
-                    continue  # 大片同色，保留(白肚)
-                if btot > 0 and bdark / btot >= 0.5:
-                    continue  # 周圍多為深色 → 眼白/五官，保留
-                for (x, y) in comp:
-                    r, g, b, a = px[x, y]; px[x, y] = (r, g, b, 0)
-
     if resize:
         im = im.resize(resize, Image.LANCZOS)
     im.save(outp); print(f"✓ {inp} -> {outp}")
@@ -91,7 +55,6 @@ def main():
     ap.add_argument("src"); ap.add_argument("dst")
     ap.add_argument("--bg", default="FFFFFF"); ap.add_argument("--fuzz", type=float, default=0.10)
     ap.add_argument("--resize", default=None)
-    ap.add_argument("--holes", type=float, default=0.005, help="移除被包住的背景塊上限(佔全圖比例)；0=不移除(保留大片白如企鵝肚)")
     a = ap.parse_args()
     bg = hexrgb(a.bg)
     resize = tuple(int(v) for v in a.resize.lower().split("x")) if a.resize else None
@@ -99,9 +62,9 @@ def main():
         os.makedirs(a.dst, exist_ok=True)
         for f in os.listdir(a.src):
             if f.lower().endswith((".png", ".jpg", ".jpeg", ".webp")):
-                cut(os.path.join(a.src, f), os.path.join(a.dst, os.path.splitext(f)[0]+".png"), bg, a.fuzz, resize, a.holes)
+                cut(os.path.join(a.src, f), os.path.join(a.dst, os.path.splitext(f)[0]+".png"), bg, a.fuzz, resize)
     else:
-        cut(a.src, a.dst, bg, a.fuzz, resize, a.holes)
+        cut(a.src, a.dst, bg, a.fuzz, resize)
 
 
 if __name__ == "__main__":

@@ -14,7 +14,6 @@ chroma_key.py — 把「純色背景」變透明（最適合 Gemini 生在 #FF00
 """
 import sys, os, argparse
 from PIL import Image
-# (chroma_key 不處理被包住的白塊；那個用 cutout.py)
 
 
 def hex_rgb(h):
