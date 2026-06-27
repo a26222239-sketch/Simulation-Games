@@ -23,7 +23,7 @@ def hexrgb(h):
     return tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
 
 
-def cut(inp, outp, bg, fuzz, resize):
+def cut(inp, outp, bg, fuzz, resize, holes_frac):
     im = Image.open(inp).convert("RGBA"); W, H = im.size; px = im.load()
     tol = fuzz * 255
     def isbg(x, y):
@@ -41,10 +41,33 @@ def cut(inp, outp, bg, fuzz, resize):
             if 0 <= nx < W and 0 <= ny < H:
                 i = ny*W+nx
                 if not vis[i] and isbg(nx, ny): vis[i] = 1; dq.append((nx, ny))
+    # 邊緣相連的背景設透明
     for y in range(H):
         for x in range(W):
             if vis[y*W+x]:
                 r, g, b, a = px[x, y]; px[x, y] = (r, g, b, 0)
+
+    # 移除「被包住的小面積背景塊」(例如兩腿間殘白)；大片同色(白肚)保留
+    if holes_frac > 0:
+        limit = holes_frac * W * H
+        seen = bytearray(W*H)
+        for sy in range(H):
+            for sx in range(W):
+                si = sy*W+sx
+                if vis[si] or seen[si] or not isbg(sx, sy):
+                    continue
+                comp = []; stack = [(sx, sy)]; seen[si] = 1
+                while stack:
+                    x, y = stack.pop(); comp.append((x, y))
+                    for nx, ny in ((x+1,y),(x-1,y),(x,y+1),(x,y-1)):
+                        if 0 <= nx < W and 0 <= ny < H:
+                            j = ny*W+nx
+                            if not seen[j] and not vis[j] and isbg(nx, ny):
+                                seen[j] = 1; stack.append((nx, ny))
+                if len(comp) <= limit:
+                    for (x, y) in comp:
+                        r, g, b, a = px[x, y]; px[x, y] = (r, g, b, 0)
+
     if resize:
         im = im.resize(resize, Image.LANCZOS)
     im.save(outp); print(f"✓ {inp} -> {outp}")
@@ -55,6 +78,7 @@ def main():
     ap.add_argument("src"); ap.add_argument("dst")
     ap.add_argument("--bg", default="FFFFFF"); ap.add_argument("--fuzz", type=float, default=0.10)
     ap.add_argument("--resize", default=None)
+    ap.add_argument("--holes", type=float, default=0.005, help="移除被包住的背景塊上限(佔全圖比例)；0=不移除(保留大片白如企鵝肚)")
     a = ap.parse_args()
     bg = hexrgb(a.bg)
     resize = tuple(int(v) for v in a.resize.lower().split("x")) if a.resize else None
@@ -62,9 +86,9 @@ def main():
         os.makedirs(a.dst, exist_ok=True)
         for f in os.listdir(a.src):
             if f.lower().endswith((".png", ".jpg", ".jpeg", ".webp")):
-                cut(os.path.join(a.src, f), os.path.join(a.dst, os.path.splitext(f)[0]+".png"), bg, a.fuzz, resize)
+                cut(os.path.join(a.src, f), os.path.join(a.dst, os.path.splitext(f)[0]+".png"), bg, a.fuzz, resize, a.holes)
     else:
-        cut(a.src, a.dst, bg, a.fuzz, resize)
+        cut(a.src, a.dst, bg, a.fuzz, resize, a.holes)
 
 
 if __name__ == "__main__":
