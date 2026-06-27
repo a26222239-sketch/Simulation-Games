@@ -194,8 +194,8 @@ export class Renderer {
       const p = gridToScreen(a.fx, a.fy);
       const bob = (!this.animated(base) && a.moving) ? Math.abs(Math.sin(a.frame * 1.6)) * 2 : 0;
       sp.setPosition(p.x, p.y - bob).setDepth(a.fx + a.fy);
-      const fr = ANIMALS[st.species].frame || 64;
-      this.shadow(p.x, p.y, fr * 0.6, fr * 0.22); // 影子寬度配合動物體型，腳底對齊
+      // 有精靈圖的動物：影子已畫在圖裡，不再另外畫；只有程式佔位動物才補影子
+      if (!this.hasImg(base)) { const fr = ANIMALS[st.species].frame || 48; this.shadow(p.x, p.y, fr * 0.6, fr * 0.22); }
       if (key === base) { // 走路/待機（走路精靈圖）
         if (this.animated(base)) { if (a.state === "walk" && a.moving) sp.play(base + "_" + a.dir, true); else { sp.anims.stop(); sp.setFrame(ROW[a.dir] * 4); } }
       } else { // 進食/睡覺（單排動畫）
