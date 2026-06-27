@@ -33,6 +33,7 @@ class MainScene extends Phaser.Scene {
     const c = gridToScreen(zoo.entrance.cx, zoo.h - 5); cam.centerOn(c.x, c.y); // 對準入口起始區
 
     this.dragging = false; this.moved = false; this.pinchDist = 0;
+    this.input.addPointer(2); // 開啟多點觸控(手機雙指縮放)
 
     this.input.on("pointerdown", (p) => {
       this.downX = p.x; this.downY = p.y; this.moved = false;
@@ -57,6 +58,9 @@ class MainScene extends Phaser.Scene {
     this.input.on("pointerup", () => {
       if (!this.moved && this.pinchDist === 0 && hover) onTap(hover.gx, hover.gy);
       this.pinchDist = 0;
+      // 若還有一指在畫面上(剛從雙指放開成單指)，重設平移基準避免跳動
+      const still = [this.input.pointer1, this.input.pointer2].find((pt) => pt && pt.isDown);
+      if (still) { this.downX = still.x; this.downY = still.y; this.startSX = cam.scrollX; this.startSY = cam.scrollY; this.moved = true; }
     });
     this.input.on("wheel", (p, go, dx, dy) => this.zoomBy(dy < 0 ? 1.1 : 1 / 1.1, p.x, p.y));
 
