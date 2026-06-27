@@ -121,9 +121,45 @@ soft top-left light, no objects, no shadow, no text.
 
 ---
 
+## 5.5 用 Gemini（Gemini 2.5 Flash Image / Nano Banana）vs GPT
+
+兩個 AI 互補，建議分工：
+
+| 需求 | 建議工具 | 原因 |
+|---|---|---|
+| 同一隻動物的 16 格保持一致 | **Gemini** | 可上傳基準圖、對話式「同角色換方向/動作」，一致性最強 |
+| 乾淨透明背景 | **GPT (gpt-image-1)** | 可直接指定 transparent background，去背最省事 |
+| 建築 / 樹 / 地磚（單張） | 兩者皆可 | — |
+
+**Gemini 的正確用法 = 上傳參考圖 + 對話迭代**（不要每次從零生）。
+因為 Gemini 透明背景較不穩，請它畫在**純洋紅 `#FF00FF` 背景**上，最後再去背。
+
+**步驟**
+1. 生基準站姿（面向鏡頭）：
+```
+Cute chibi {{ANIMAL}} ({{APPEARANCE}}), facing the camera, standing.
+2.5D isometric zoo game style: flat colors, soft cel shading, thin dark outline, top-left light.
+Solid flat magenta (#FF00FF) background, no shadow, no text. Square image.
+```
+2. **上傳上一步的圖**，逐方向產生走路 4 格（front / left / right / back 各跑一次）：
+```
+Using THIS exact character — keep identical colors, shapes and proportions —
+draw a horizontal strip of 4 walk-cycle frames facing {{DIRECTION}}, evenly spaced,
+same flat magenta (#FF00FF) background, same size, no shadow, no text.
+```
+3. 去背（把洋紅扣掉）→ 縮放 → 拼成 256×256 的 4×4（見下方流程）。
+
+> 純洋紅 `#FF00FF`（或純綠 `#00FF00`）幾乎不會出現在動物身上，去背最乾淨。
+> Imagen（Google 另一個生圖模型）畫質高但不擅長「同角色換姿勢」，做精靈圖請用 **Gemini 2.5 Flash Image** 那個會「改圖/對話」的。
+
+---
+
 ## 6. 生圖後的處理流程（重點）
 
-1. **透明背景**：用 gpt-image-1 / DALL·E 時指定 transparent background；若仍有背景，用去背工具(remove.bg / Photopea 魔術棒)清掉。
+1. **透明背景**：
+   - GPT：直接指定 transparent background。
+   - Gemini：畫在純洋紅 `#FF00FF` 底，再「色鍵去背」——Photopea：選取 → 顏色範圍 → 點洋紅 → 刪除；
+     或 ImageMagick：`convert in.png -fuzz 12% -transparent "#FF00FF" out.png`；或 remove.bg。
 2. **縮小到目標尺寸**：1024 生成 → 縮到 256×256（動物）/ 192×256（遊客）等。
 3. **對齊/切割**：精靈圖每格必須等分對齊。若是分開生的單格/單排，用免費工具拼成網格：
    - Piskel、Aseprite、TexturePacker，或用簡單腳本（ImageMagick `montage`）。
