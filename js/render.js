@@ -21,6 +21,7 @@ export class Renderer {
     for (const id of Object.keys(ANIMALS)) {
       const fr = ANIMALS[id].frame || 64; // 單格像素依動物體型(獅子64基準)
       scene.load.spritesheet("animal_" + id, `assets/animal_${id}.png`, { frameWidth: fr, frameHeight: fr });        // 走路(4方向×4格)
+      scene.load.spritesheet("animal_" + id + "_idle", `assets/animal_${id}_idle.png`, { frameWidth: fr, frameHeight: fr });   // 待機(單排，可選)
       scene.load.spritesheet("animal_" + id + "_eat", `assets/animal_${id}_eat.png`, { frameWidth: fr, frameHeight: fr });   // 進食(單排)
       scene.load.spritesheet("animal_" + id + "_sleep", `assets/animal_${id}_sleep.png`, { frameWidth: fr, frameHeight: fr }); // 睡覺(單排)
     }
@@ -65,6 +66,7 @@ export class Renderer {
     };
     for (const id of Object.keys(ANIMALS)) {
       buildWalk("animal_" + id);
+      buildLoop("animal_" + id + "_idle", 3);
       buildLoop("animal_" + id + "_eat", 5);
       buildLoop("animal_" + id + "_sleep", 3);
     }
@@ -190,6 +192,7 @@ export class Renderer {
       let key = base;
       if (a.state === "eat" && this.hasImg(base + "_eat")) key = base + "_eat";
       else if (a.state === "sleep" && this.hasImg(base + "_sleep")) key = base + "_sleep";
+      else if (a.state === "idle" && this.hasImg(base + "_idle")) key = base + "_idle";
       if (sp.texture.key !== key) sp.setTexture(key);
       const p = gridToScreen(a.fx, a.fy);
       const bob = (!this.animated(base) && a.moving) ? Math.abs(Math.sin(a.frame * 1.6)) * 2 : 0;
