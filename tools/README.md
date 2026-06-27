@@ -48,9 +48,20 @@ python3 tools/removebg.py 生圖資料夾/ assets/       # 批次
 
 ---
 
+## 3. normalize.py（每格貼齊底部，避免懸空/陷地）
+
+去背後**務必**跑這步：把精靈圖每一格的內容貼齊格子底部，動物的腳才會落在同一基準線，
+切換走路/進食/睡覺時不會忽高忽低。
+```bash
+python3 tools/normalize.py walk.png walk.png --grid 4x4   # 走路(4列×4欄)
+python3 tools/normalize.py eat.png eat.png --grid 1x4     # 進食/睡覺(1列×4欄)
+```
+
+---
+
 ## 建議流程（搭配 docs/ART_PROMPTS.md）
 
-1. 用 **Gemini** 生角色各方向走路格（畫在洋紅 `#FF00FF` 底）。
-2. `chroma_key.py` 去背成透明。
-3. 若是分開生的單格/單排，拼成 4×4 的精靈圖（Piskel / Aseprite）。
-4. 命名 `animal_<id>.png` / `visitor.png` / `cafe.png` …放進 `assets/`，遊戲自動採用並播放走路動畫。
+1. 叫 AI 畫**純白背景**的各方向走路格（或進食/睡覺單排）。
+2. `cutout.py --bg FFFFFF --resize ...` 去背並縮到對應尺寸。
+3. `normalize.py --grid RxC` 把每格貼齊底部（避免懸空/陷地）。
+4. 命名 `animal_<id>.png` / `animal_<id>_eat.png` / `animal_<id>_sleep.png` 放進 `assets/`，遊戲自動採用並播放動畫。
