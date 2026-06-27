@@ -91,27 +91,36 @@ no background, no shadow, no text.
 
 > 待機**可不畫**：沒給待機圖時，遊戲會用走路圖的站立格定格。想更生動再畫。
 
-**進食 prompt**（白底；{{ }} 換成動物）
+> ⚠️ 重點：AI 常把「a strip of 4 frames」畫成四張一樣的。**一定要逐格寫清楚每格差異、並強調 4 DISTINCT frames**，動畫才有變化。
+
+**進食 prompt**（白底、自帶陰影、逐格描述；{{ }} 換成動物）
 ```
-A cute chibi {{ANIMAL}} ({{APPEARANCE}}), side view, an EATING animation:
-a horizontal strip of 4 frames (each 64x64 px, strip 256x64). In front of the animal there is FOOD on
-the floor ({{FOOD}}); the animal lowers its head to the food and chews, looping.
-Solid plain WHITE background. Flat colors, soft cel shading, thin dark outline, top-left light.
-Centered, feet at the bottom, identical size/colors across frames. No drop shadow, no text.
-({{FOOD}} examples — lion/monkey: a piece of red meat on a bone; elephant/giraffe: a pile of hay or leaves;
-penguin: a few small fish; pick what fits the animal.)
+A cute chibi {{ANIMAL}} ({{APPEARANCE}}), side view, an EATING animation as ONE horizontal strip of 4 DISTINCT frames (left to right), each frame clearly different so it animates. In front of the animal lies FOOD on the floor ({{FOOD}}):
+Frame 1: head up, approaching the food, mouth closed.
+Frame 2: head lowered toward the food, mouth opening.
+Frame 3: biting the food, mouth on it, eyes closed.
+Frame 4: head up again chewing; the food is mostly gone (only a small leftover remains).
+Keep the animal in the same spot; only the head/mouth and the food amount change between frames.
+Under the animal in EVERY frame, the SAME soft dark-grey oval shadow at the very bottom; it stands on the shadow.
+Style: flat colors, soft cel shading, thin dark outline, top-left light. Centered, feet and shadow at the bottom, same size/colors across frames.
+Solid plain white background. No ground texture, no text.
+({{FOOD}} — lion/monkey: red meat on a bone; elephant/giraffe: hay or leaves; penguin: small fish.)
 ```
 
-**睡覺 prompt**（白底）
+**睡覺 prompt**（白底、自帶陰影、逐格描述）
 ```
-A cute chibi {{ANIMAL}} ({{APPEARANCE}}), side view, a SLEEPING animation:
-a horizontal strip of 4 frames (each 64x64 px, strip 256x64), the animal lies down curled up and
-breathes slowly (body gently rises and falls), with small "Zzz" above, looping.
-Solid plain WHITE background. Flat colors, soft cel shading, thin dark outline, top-left light.
-Centered, lying on the bottom of each frame, identical across frames. No ground, no shadow.
+A cute chibi {{ANIMAL}} ({{APPEARANCE}}), side view, lying down asleep — a SLEEPING animation as ONE horizontal strip of 4 DISTINCT frames (left to right), each frame clearly different so it animates:
+Frame 1: lying curled on its side, belly fully exhaled (lowest), eyes closed, a tiny "z" above the head.
+Frame 2: belly inhaling a little (slightly puffed), a small "Zz" rising higher.
+Frame 3: belly fully inhaled (puffed up the most), a larger "Zzz" floating up.
+Frame 4: belly exhaling again (settling down), the "Zzz" fading near the top.
+Keep the animal in the SAME spot and lying pose; ONLY the belly size (breathing) and the floating "Zzz" change between frames.
+Under the animal in EVERY frame, the SAME soft dark-grey oval shadow at the very bottom; it lies on the shadow.
+Style: flat colors, soft cel shading, thin dark outline, top-left light. Centered, body and shadow at the bottom, same size/colors/position across frames except breathing and Zzz.
+Solid plain white background. No ground texture, no text other than the Zzz.
 ```
 
-> 進食/睡覺用**側面單排 4 格**就好，不必畫四個方向（遊戲不分方向播放）。
+> 進食/睡覺用**側面單排 4 格**即可（遊戲不分方向播放）。**逐格描述**是讓四格不同的關鍵。
 
 ---
 
