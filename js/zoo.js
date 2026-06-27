@@ -117,7 +117,7 @@ export class Zoo {
     const r = Math.random();
     if (r < 0.40) this.startWander(st, a);
     else if (r < 0.65) { a.state = "idle"; a.stateT = 2 + Math.random() * 3; }
-    else if (r < 0.85) { a.state = "eat"; a.stateT = 4.5 + Math.random() * 2.5; a.eatStarted = false; } // 夠長讓骨頭停留
+    else if (r < 0.85) { a.state = "eat"; a.stateT = 10.2; a.eatStarted = false; } // 進食動畫約8秒，再停在骨頭約2秒
     else { a.state = "sleep"; a.stateT = 5 + Math.random() * 5; }
   }
 

@@ -9,7 +9,7 @@ import { TILE_W, TILE_H, GROUND, STRUCTURES, ANIMALS } from "./config.js";
 import { gridToScreen } from "./iso.js";
 
 const HW = TILE_W / 2, HH = TILE_H / 2;
-const ASSET_VER = 3; // 換 assets 圖後 +1，自動破壞快取載新圖
+const ASSET_VER = 4; // 換 assets 圖後 +1，自動破壞快取載新圖
 const toInt = (h) => parseInt(h.slice(1), 16);
 const ROW = { down: 0, left: 1, right: 2, up: 3 }; // 精靈圖方向列順序：前/左/右/後
 
@@ -67,14 +67,16 @@ export class Renderer {
       if (!this.animated(key)) return;
       if (!s.anims.exists(key)) s.anims.create({ key, frames: s.anims.generateFrameNumbers(key, {}), frameRate: fps, repeat: -1 });
     };
-    // 進食：放慢，咀嚼(2↔3)反覆數次後停在第4格(骨頭)，只播一次(不循環)
+    // 進食：放慢，咀嚼(2↔3)反覆多次後停在第4格(骨頭)，只播一次(不循環)
+    // 序列 0 +(1,2)x11 +3 = 24 格；frameRate 3 → 約 8 秒，之後停在骨頭(由 stateT 再停 ~2 秒)
     const buildEat = (key) => {
       if (!this.animated(key)) return;
       const n = s.textures.get(key).frameTotal - 1; // 去掉 __BASE
-      const seq = n >= 4 ? [0, 1, 2, 1, 2, 1, 2, 1, 2, 3] : undefined;
+      let seq;
+      if (n >= 4) { seq = [0]; for (let i = 0; i < 11; i++) seq.push(1, 2); seq.push(3); }
       if (!s.anims.exists(key)) s.anims.create({
         key, frames: s.anims.generateFrameNumbers(key, seq ? { frames: seq } : {}),
-        frameRate: 4, repeat: 0,
+        frameRate: 3, repeat: 0,
       });
     };
     for (const id of Object.keys(ANIMALS)) {
