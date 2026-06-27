@@ -31,14 +31,17 @@ export const STRUCTURES = {
 };
 
 // ---- 動物（獸欄內飼養，會走動的 2.5D 動圖）----
-// 立繪建議：每種動物一張精靈圖 assets/animal_<id>.png，4方向×4走路格，
-//           48×48 透明背景；程式現用內建動畫小動物，丟圖即可替換。
+// 立繪規格：每種動物精靈圖 assets/animal_<id>.png（走路 4方向×4格）、
+//   _eat.png / _sleep.png（單排 4 格）。
+// ★ frame = 單格像素，「以獅子 64 為基準，依體型調整」：
+//   走路整張 = frame×4 寬 × frame×4 高；進食/睡覺 = frame×4 寬 × frame 高。
+//   遊戲會依各動物的 frame 載入並顯示，所以大象天生比企鵝大。
 export const ANIMALS = {
-  lion:     { name: "獅子", body: "#d9a441", accent: "#a87a2a", buy: 200, popularity: 6, speed: 0.7, size: 1.1 },
-  elephant: { name: "大象", body: "#9aa0a6", accent: "#787e84", buy: 350, popularity: 8, speed: 0.5, size: 1.4 },
-  penguin:  { name: "企鵝", body: "#2b2f36", accent: "#f1f1f1", buy: 150, popularity: 5, speed: 0.9, size: 0.8 },
-  monkey:   { name: "猴子", body: "#8a5a3b", accent: "#caa46a", buy: 180, popularity: 5, speed: 1.1, size: 0.8 },
-  giraffe:  { name: "長頸鹿", body: "#e8c14a", accent: "#b5894a", buy: 320, popularity: 7, speed: 0.6, size: 1.5 },
+  lion:     { name: "獅子", body: "#d9a441", accent: "#a87a2a", buy: 200, popularity: 6, speed: 0.7, size: 1.1, frame: 64 },
+  elephant: { name: "大象", body: "#9aa0a6", accent: "#787e84", buy: 350, popularity: 8, speed: 0.5, size: 1.4, frame: 96 },
+  penguin:  { name: "企鵝", body: "#2b2f36", accent: "#f1f1f1", buy: 150, popularity: 5, speed: 0.9, size: 0.8, frame: 48 },
+  monkey:   { name: "猴子", body: "#8a5a3b", accent: "#caa46a", buy: 180, popularity: 5, speed: 1.1, size: 0.8, frame: 56 },
+  giraffe:  { name: "長頸鹿", body: "#e8c14a", accent: "#b5894a", buy: 320, popularity: 7, speed: 0.6, size: 1.5, frame: 96 },
 };
 
 // ---- 遊客 ----

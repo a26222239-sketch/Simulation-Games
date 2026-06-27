@@ -19,9 +19,10 @@ export class Renderer {
   static preload(scene) {
     scene.load.on("loaderror", () => {}); // 沒有對應圖檔就略過，改用佔位貼圖
     for (const id of Object.keys(ANIMALS)) {
-      scene.load.spritesheet("animal_" + id, `assets/animal_${id}.png`, { frameWidth: 64, frameHeight: 64 });        // 走路(4方向×4格)
-      scene.load.spritesheet("animal_" + id + "_eat", `assets/animal_${id}_eat.png`, { frameWidth: 64, frameHeight: 64 });   // 進食(單排)
-      scene.load.spritesheet("animal_" + id + "_sleep", `assets/animal_${id}_sleep.png`, { frameWidth: 64, frameHeight: 64 }); // 睡覺(單排)
+      const fr = ANIMALS[id].frame || 64; // 單格像素依動物體型(獅子64基準)
+      scene.load.spritesheet("animal_" + id, `assets/animal_${id}.png`, { frameWidth: fr, frameHeight: fr });        // 走路(4方向×4格)
+      scene.load.spritesheet("animal_" + id + "_eat", `assets/animal_${id}_eat.png`, { frameWidth: fr, frameHeight: fr });   // 進食(單排)
+      scene.load.spritesheet("animal_" + id + "_sleep", `assets/animal_${id}_sleep.png`, { frameWidth: fr, frameHeight: fr }); // 睡覺(單排)
     }
     scene.load.spritesheet("visitor", "assets/visitor.png", { frameWidth: 48, frameHeight: 64 });
     scene.load.image("cafe", "assets/cafe.png");
@@ -82,7 +83,7 @@ export class Renderer {
   gfx() { return this.scene.make.graphics({ add: false }); }
 
   genAnimal(id) {
-    const def = ANIMALS[id], g = this.gfx(), W = 64, H = 64, cx = 32, footY = 60, sz = def.size;
+    const def = ANIMALS[id], g = this.gfx(), F = def.frame || 64, W = F, H = F, cx = F / 2, footY = F - 4, sz = def.size;
     const body = toInt(def.body), acc = toInt(def.accent);
     if (id === "penguin") {
       g.fillStyle(body, 1); g.fillEllipse(cx, footY - 16 * sz, 18 * sz, 26 * sz);
@@ -99,6 +100,7 @@ export class Renderer {
       g.fillStyle(0x2a2a2a, 1); g.fillCircle(hx + 2 * sz, hy - 1, 1.5 * sz);
     }
     g.generateTexture("animal_" + id, W, H); g.destroy();
+    return;
   }
   genVisitor() {
     const g = this.gfx(), x = 24, footY = 62, bH = 14, bW = 9, hR = 6;
