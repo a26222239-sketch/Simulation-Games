@@ -103,7 +103,7 @@ export class Zoo {
   makeAnimal(st) {
     const a = { fx: st.ox + Math.random() * st.w, fy: st.oy + Math.random() * st.h,
       tx: 0, ty: 0, state: "walk", stateT: 0, frame: 0, animTime: 0, moving: false, dir: "down",
-      yawning: false, yawnDur: 0, yawnT: 3 + Math.random() * 6 };
+      yawning: false, yawnDur: 0, yawnT: 3 + Math.random() * 6, eatStarted: false };
     this.startWander(st, a);
     return a;
   }
@@ -117,7 +117,7 @@ export class Zoo {
     const r = Math.random();
     if (r < 0.40) this.startWander(st, a);
     else if (r < 0.65) { a.state = "idle"; a.stateT = 2 + Math.random() * 3; }
-    else if (r < 0.85) { a.state = "eat"; a.stateT = 3 + Math.random() * 3; }
+    else if (r < 0.85) { a.state = "eat"; a.stateT = 4.5 + Math.random() * 2.5; a.eatStarted = false; } // 夠長讓骨頭停留
     else { a.state = "sleep"; a.stateT = 5 + Math.random() * 5; }
   }
 

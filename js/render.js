@@ -64,10 +64,20 @@ export class Renderer {
       if (!this.animated(key)) return;
       if (!s.anims.exists(key)) s.anims.create({ key, frames: s.anims.generateFrameNumbers(key, {}), frameRate: fps, repeat: -1 });
     };
+    // 進食：放慢，咀嚼(2↔3)反覆數次後停在第4格(骨頭)，只播一次(不循環)
+    const buildEat = (key) => {
+      if (!this.animated(key)) return;
+      const n = s.textures.get(key).frameTotal - 1; // 去掉 __BASE
+      const seq = n >= 4 ? [0, 1, 2, 1, 2, 1, 2, 1, 2, 3] : undefined;
+      if (!s.anims.exists(key)) s.anims.create({
+        key, frames: s.anims.generateFrameNumbers(key, seq ? { frames: seq } : {}),
+        frameRate: 4, repeat: 0,
+      });
+    };
     for (const id of Object.keys(ANIMALS)) {
       buildWalk("animal_" + id);
       buildLoop("animal_" + id + "_idle", 3);
-      buildLoop("animal_" + id + "_eat", 5);
+      buildEat("animal_" + id + "_eat");
       buildLoop("animal_" + id + "_sleep", 3);
     }
     buildWalk("visitor");
@@ -202,8 +212,11 @@ export class Renderer {
       this.shadow(p.x, p.y, fr * 0.6, fr * 0.22);
       if (key === base) { // 走路/待機（走路精靈圖）
         if (this.animated(base)) { if (a.state === "walk" && a.moving) sp.play(base + "_" + a.dir, true); else { sp.anims.stop(); sp.setFrame(ROW[a.dir] * 4); } }
-      } else { // 進食/睡覺（單排動畫）
-        if (this.animated(key)) sp.play(key, true); else sp.anims.stop();
+      } else { // 進食/睡覺/打哈欠（單排動畫）
+        if (this.animated(key)) {
+          if (key === base + "_eat") { if (!a.eatStarted) { sp.play(key); a.eatStarted = true; } } // 只播一次，停在骨頭
+          else sp.play(key, true); // 睡覺/哈欠循環
+        } else sp.anims.stop();
       }
     }
     for (const [a, sp] of this.animalSprites) if (!seenA.has(a)) { sp.destroy(); this.animalSprites.delete(a); }
