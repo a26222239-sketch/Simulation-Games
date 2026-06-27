@@ -36,7 +36,7 @@ export const STRUCTURES = {
 // ★ frame = 單格像素，「以獅子 48 為基準，依體型調整」：
 //   走路整張 = frame×4 寬 × frame×4 高；進食/睡覺 = frame×4 寬 × frame 高。
 //   遊戲會依各動物的 frame 載入並顯示，所以大象天生比企鵝大。
-//   精靈圖「每格底部要自帶陰影」，所以程式不再另外畫影子（見 render.js）。
+//   精靈圖用 rembg 去背(會連陰影一起去掉)，所以影子由程式繪製（見 render.js）。
 export const ANIMALS = {
   lion:     { name: "獅子", body: "#d9a441", accent: "#a87a2a", buy: 200, popularity: 6, speed: 0.7, size: 1.1, frame: 48 },
   elephant: { name: "大象", body: "#9aa0a6", accent: "#787e84", buy: 350, popularity: 8, speed: 0.5, size: 1.4, frame: 72 },

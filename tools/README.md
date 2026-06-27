@@ -4,9 +4,13 @@
 
 | 背景情況 | 用哪個 | 需要下載模型？ |
 |---|---|---|
-| **白底/單色底（推薦）** | `cutout.py`（從邊緣去背，保留主體內白色） | 否（快、乾淨） |
+| **動物精靈圖（推薦）** | `rembg_cut.py`（逐格用 rembg，腿間/眼白都乾淨、無殘影） | 是（首次約 176MB） |
+| 白底/單色底、想保留圖中陰影 | `cutout.py`（邊緣去背，會留腿間小白） | 否 |
 | 純色底（洋紅/綠）整片去 | `chroma_key.py` | 否 |
-| **任意/複雜背景**（陰影、漸層、實景） | `removebg.py`（開源 rembg） | 是（首次約 170MB） |
+| 單張任意背景 | `removebg.py`（rembg 原始包裝） | 是 |
+
+> ⚠️ `rembg_cut.py` 去背最乾淨，但**會把圖裡畫的陰影也去掉** → 搭配它時用「程式影子」(遊戲已內建)。
+> 所以生圖時動物**不必自己畫陰影**。
 
 > `cutout.py` 最適合「叫 AI 畫純白背景」的情況——它只移除跟邊緣相連的背景，
 > 所以動物的白肚子、白眼睛不會被誤刪，還能順手 `--resize`。
@@ -47,6 +51,16 @@ python3 tools/removebg.py 生圖資料夾/ assets/       # 批次
 也可直接用 rembg 內建 CLI：`rembg i in.png out.png`。
 
 ---
+
+## 0. rembg_cut.py（推薦：逐格 AI 去背）
+
+```bash
+pip install rembg onnxruntime
+python3 tools/rembg_cut.py 原圖.png tmp.png --grid 4x4      # 逐隻去背(無殘影)
+python3 tools/normalize.py tmp.png assets/animal_lion.png --grid 4x4 --cell 48
+```
+逐格分開跑 rembg，避免整張一起跑把某隻弄成殘影；腿間、眼白都乾淨。
+會去掉圖中陰影 → 用程式影子(遊戲內建)。
 
 ## 3. normalize.py（縮到塞進格子＋貼底，避免切頭/懸空/陷地）
 
