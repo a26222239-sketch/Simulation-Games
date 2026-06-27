@@ -64,6 +64,10 @@ def main():
     ap.add_argument("--margin", type=int, default=1)
     ap.add_argument("--scale", type=float, default=0,
                     help="指定固定縮放倍率(>0)；多張圖共用同一值可讓動物大小完全一致")
+    ap.add_argument("--shrink-rows", default="",
+                    help="逗號分隔的列索引，這些列的主體最大邊再縮小 --shrink-px 像素(例: 0,3)")
+    ap.add_argument("--shrink-px", type=int, default=0,
+                    help="--shrink-rows 指定的列，主體最大邊要縮小的像素數")
     a = ap.parse_args()
     R, C = (int(v) for v in a.grid.lower().split("x"))
     N = a.cell
@@ -104,14 +108,22 @@ def main():
     else:
         scale = min(N * (1 - a.pad) / maxw, N * (1 - a.pad) / maxh)
 
+    shrink_rows = {int(v) for v in a.shrink_rows.split(",") if v.strip() != ""}
+
     out = Image.new("RGBA", (C * N, R * N), (0, 0, 0, 0))
     for i, (crop, lb) in enumerate(cells):
         if not crop or not lb: continue
         r, col = divmod(i, C)
-        nw, nh = max(1, round(crop.width * scale)), max(1, round(crop.height * scale))
+        s = scale
+        # 指定的列：把主體最大邊再縮小 shrink_px 像素（其餘列不動）
+        if r in shrink_rows and a.shrink_px > 0:
+            dmax = max(lb[2] - lb[0], lb[3] - lb[1]) * scale
+            if dmax > a.shrink_px:
+                s = scale * (dmax - a.shrink_px) / dmax
+        nw, nh = max(1, round(crop.width * s)), max(1, round(crop.height * s))
         cc = crop.resize((nw, nh), Image.LANCZOS)
         # 主體在縮放後的座標
-        lx0, ly0, lx1, ly1 = (v * scale for v in lb)
+        lx0, ly0, lx1, ly1 = (v * s for v in lb)
         lion_cx = (lx0 + lx1) / 2.0      # 主體水平中心
         lion_bottom = ly1                # 主體底部
         # 對齊：主體中心 → 格中心；主體底部 → 距格底 margin
