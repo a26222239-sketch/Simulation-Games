@@ -24,19 +24,21 @@ canvas { position: fixed; inset: 0; z-index: 0; display: block; }
 .stat .label { font-size: 11px; opacity: .8; }
 .stat .value { font-size: 17px; font-weight: 700; }
 
-/* ===== 右側動作按鈕 ===== */
-#actions { position: fixed; top: 64px; right: 8px; z-index: 20; display: flex; flex-direction: column; gap: 8px; }
-#actions > button {
-  width: 46px; height: 46px; border-radius: 12px; border: none;
+/* ===== 右上選單 ===== */
+#menu-area { position: fixed; top: 64px; right: 8px; z-index: 20; }
+#btn-menu {
+  width: 46px; height: 46px; border-radius: 12px;
   background: rgba(20,30,20,.65); color: #fff; font-size: 22px; cursor: pointer;
   border: 1px solid rgba(255,255,255,.12);
 }
-#actions > button:active { transform: scale(.93); }
+#btn-menu:active { transform: scale(.93); }
 #menu-panel {
-  position: absolute; top: 0; right: 54px; width: 180px;
+  position: absolute; top: 0; right: 54px; width: 200px;
   background: #1b2a1b; border: 1px solid rgba(255,255,255,.14);
   border-radius: 12px; padding: 8px; display: flex; flex-direction: column; gap: 6px;
 }
+#menu-panel hr { border: none; border-top: 1px solid rgba(255,255,255,.1); }
+.hint { font-size: 11px; opacity: .6; line-height: 1.5; padding: 0 4px; }
 #menu-panel button { text-align: left; padding: 10px; border-radius: 8px; border: none; background: rgba(255,255,255,.07); color: #e8eef5; font-size: 14px; cursor: pointer; }
 #menu-panel button:active { background: rgba(255,255,255,.18); }
 

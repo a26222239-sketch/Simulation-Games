@@ -4,24 +4,20 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta name="theme-color" content="#5ba049" />
-  <title>迷你農場</title>
+  <title>迷你動物園</title>
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
   <!-- 上方資訊列 -->
   <header id="topbar">
     <div class="stat"><span class="label">💰 資金</span><span id="stat-money" class="value">0</span></div>
+    <div class="stat"><span class="label">🧑‍🤝‍🧑 遊客</span><span id="stat-visitors" class="value">0</span></div>
     <div class="stat"><span class="label">📅 天數</span><span id="stat-day" class="value">1</span></div>
-    <div class="stat"><span class="label">🎒 庫存</span><span id="stat-inv" class="value">0</span></div>
-    <div class="stat"><span class="label">📍 位置</span><span id="stat-scene" class="value">農場</span></div>
+    <div class="stat"><span class="label">✨ 魅力</span><span id="stat-attr" class="value">0</span></div>
   </header>
 
-  <!-- 右側動作按鈕 -->
-  <div id="actions">
-    <button id="btn-sleep" title="睡覺/下一天">💤</button>
-    <button id="btn-travel" title="進城/回農場">🏘️</button>
-    <button id="btn-face" title="捏臉">👤</button>
-    <button id="btn-wardrobe" title="衣櫃換裝">👕</button>
+  <!-- 右上選單 -->
+  <div id="menu-area">
     <button id="btn-menu" title="選單">☰</button>
     <div id="menu-panel" class="hidden">
       <button id="btn-save">💾 立即存檔</button>
@@ -29,24 +25,23 @@
       <button id="btn-export">⬇️ 匯出存檔</button>
       <button id="btn-import">⬆️ 匯入存檔</button>
       <button id="btn-new">🆕 重新開始</button>
+      <hr />
+      <div class="hint">選工具後點地圖放置。<br/>遊客只走「步道」，記得把步道連到獸欄與商店！<br/>拖曳平移、滾輪/雙指縮放。</div>
     </div>
   </div>
 
-  <!-- 左下虛擬搖桿 -->
-  <div id="joy"><div id="joy-stick"></div></div>
-
   <!-- 底部工具列 -->
   <nav id="toolbar">
-    <button class="tool" data-tool="hoe" title="鋤地">⛏️<small>鋤地</small></button>
-    <button class="tool" data-tool="seed" title="種植">🌱<small>種植</small></button>
-    <button class="tool" data-tool="water" title="澆水">💧<small>澆水</small></button>
-    <button class="tool" data-tool="interact" title="互動/收成">✋<small>收成</small></button>
-    <button id="btn-build" class="tool" title="建造/畜牧">🏗️<small>建造</small></button>
+    <button class="tool" data-tool="path" title="步道">🟫<small>步道</small></button>
+    <button class="tool" data-tool="enclosure" title="獸欄">🦁<small>獸欄</small></button>
+    <button class="tool" data-tool="cafe" title="咖啡廳">☕<small>咖啡</small></button>
+    <button class="tool" data-tool="souvenir" title="紀念品店">🎁<small>紀念品</small></button>
+    <button class="tool" data-tool="tree" title="樹木">🌳<small>樹木</small></button>
+    <button class="tool" data-tool="bulldoze" title="拆除">🚧<small>拆除</small></button>
   </nav>
 
   <div id="toast" class="hidden"></div>
   <input type="file" id="file-input" accept="application/json" hidden />
-  <!-- 先載入 Phaser 引擎（本地檔，不依賴外部 CDN），再載入遊戲 -->
   <script src="vendor/phaser.min.js"></script>
   <script type="module" src="js/phaser-main.js"></script>
 </body>
