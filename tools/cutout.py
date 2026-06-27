@@ -47,7 +47,12 @@ def cut(inp, outp, bg, fuzz, resize, holes_frac):
             if vis[y*W+x]:
                 r, g, b, a = px[x, y]; px[x, y] = (r, g, b, 0)
 
-    # 移除「被包住的小面積背景塊」(例如兩腿間殘白)；大片同色(白肚)保留
+    # 移除「被包住的小面積背景塊」(例如兩腿間殘白)
+    #  ‧ 大片同色(白肚)保留：面積 > limit 不刪
+    #  ‧ 眼白保留：若白塊周圍大多是「深色」(瞳孔/描邊)，視為五官，不刪
+    def dark(x, y):
+        r, g, b, a = px[x, y]
+        return a > 20 and (0.3*r + 0.59*g + 0.11*b) < 90
     if holes_frac > 0:
         limit = holes_frac * W * H
         seen = bytearray(W*H)
@@ -57,16 +62,24 @@ def cut(inp, outp, bg, fuzz, resize, holes_frac):
                 if vis[si] or seen[si] or not isbg(sx, sy):
                     continue
                 comp = []; stack = [(sx, sy)]; seen[si] = 1
+                bdark = btot = 0
                 while stack:
                     x, y = stack.pop(); comp.append((x, y))
                     for nx, ny in ((x+1,y),(x-1,y),(x,y+1),(x,y-1)):
-                        if 0 <= nx < W and 0 <= ny < H:
-                            j = ny*W+nx
-                            if not seen[j] and not vis[j] and isbg(nx, ny):
-                                seen[j] = 1; stack.append((nx, ny))
-                if len(comp) <= limit:
-                    for (x, y) in comp:
-                        r, g, b, a = px[x, y]; px[x, y] = (r, g, b, 0)
+                        if not (0 <= nx < W and 0 <= ny < H):
+                            continue
+                        j = ny*W+nx
+                        if not vis[j] and isbg(nx, ny):
+                            if not seen[j]: seen[j] = 1; stack.append((nx, ny))
+                        else:  # 邊界(角色像素)
+                            btot += 1
+                            if dark(nx, ny): bdark += 1
+                if len(comp) > limit:
+                    continue  # 大片同色，保留(白肚)
+                if btot > 0 and bdark / btot >= 0.5:
+                    continue  # 周圍多為深色 → 眼白/五官，保留
+                for (x, y) in comp:
+                    r, g, b, a = px[x, y]; px[x, y] = (r, g, b, 0)
 
     if resize:
         im = im.resize(resize, Image.LANCZOS)
