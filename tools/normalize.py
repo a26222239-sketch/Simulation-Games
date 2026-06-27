@@ -62,6 +62,8 @@ def main():
     ap.add_argument("--cell", type=int, required=True)
     ap.add_argument("--pad", type=float, default=0.06)
     ap.add_argument("--margin", type=int, default=1)
+    ap.add_argument("--scale", type=float, default=0,
+                    help="指定固定縮放倍率(>0)；多張圖共用同一值可讓動物大小完全一致")
     a = ap.parse_args()
     R, C = (int(v) for v in a.grid.lower().split("x"))
     N = a.cell
@@ -97,7 +99,10 @@ def main():
     # 只用主體(動物本體)的尺寸決定縮放，附件不參與
     maxw = max(lb[2] - lb[0] for lb in lions)
     maxh = max(lb[3] - lb[1] for lb in lions)
-    scale = min(N * (1 - a.pad) / maxw, N * (1 - a.pad) / maxh)
+    if a.scale > 0:
+        scale = a.scale
+    else:
+        scale = min(N * (1 - a.pad) / maxw, N * (1 - a.pad) / maxh)
 
     out = Image.new("RGBA", (C * N, R * N), (0, 0, 0, 0))
     for i, (crop, lb) in enumerate(cells):
