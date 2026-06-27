@@ -188,11 +188,11 @@ export class Renderer {
       const base = "animal_" + st.species;
       let sp = this.animalSprites.get(a);
       if (!sp) { sp = scene.add.sprite(0, 0, base).setOrigin(0.5, 1); this.animalSprites.set(a, sp); }
-      // 依狀態挑貼圖（沒有對應圖就退回走路/待機）
+      // 依狀態挑貼圖（沒有對應圖就退回走路/待機站立）
       let key = base;
       if (a.state === "eat" && this.hasImg(base + "_eat")) key = base + "_eat";
       else if (a.state === "sleep" && this.hasImg(base + "_sleep")) key = base + "_sleep";
-      else if (a.state === "idle" && this.hasImg(base + "_idle")) key = base + "_idle";
+      else if (a.state === "idle" && a.yawning && this.hasImg(base + "_idle")) key = base + "_idle"; // 只有打哈欠那一下用待機動畫
       if (sp.texture.key !== key) sp.setTexture(key);
       const p = gridToScreen(a.fx, a.fy);
       const bob = (!this.animated(base) && a.moving) ? Math.abs(Math.sin(a.frame * 1.6)) * 2 : 0;

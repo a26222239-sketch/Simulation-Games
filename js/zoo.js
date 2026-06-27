@@ -102,7 +102,8 @@ export class Zoo {
   }
   makeAnimal(st) {
     const a = { fx: st.ox + Math.random() * st.w, fy: st.oy + Math.random() * st.h,
-      tx: 0, ty: 0, state: "walk", stateT: 0, frame: 0, animTime: 0, moving: false, dir: "down" };
+      tx: 0, ty: 0, state: "walk", stateT: 0, frame: 0, animTime: 0, moving: false, dir: "down",
+      yawning: false, yawnDur: 0, yawnT: 3 + Math.random() * 6 };
     this.startWander(st, a);
     return a;
   }
@@ -245,7 +246,12 @@ export class Zoo {
         a.fx += dx / d * def.speed * dt; a.fy += dy / d * def.speed * dt;
       } else { a.moving = false; this.pickActivity(s, a); }     // 到達或逾時 → 選下一個活動
     } else {
-      a.moving = false; a.frame = Math.floor(a.animTime / 0.28) % 4; // 進食/睡覺/待機的動畫格
+      a.moving = false; a.frame = Math.floor(a.animTime / 0.28) % 4; // 進食/睡覺的動畫格
+      if (a.state === "idle") {
+        // 待機大多時間發呆站著，偶爾才打一次哈欠
+        if (a.yawning) { a.yawnDur -= dt; if (a.yawnDur <= 0) a.yawning = false; }
+        else { a.yawnT -= dt; if (a.yawnT <= 0) { a.yawning = true; a.yawnDur = 1.6; a.yawnT = 6 + Math.random() * 6; } }
+      }
       if (a.stateT <= 0) this.startWander(s, a);
     }
   }

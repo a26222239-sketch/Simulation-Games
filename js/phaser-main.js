@@ -149,6 +149,11 @@ function bindUI() {
   }));
   sel("path");
 
+  // 縮放按鈕（以畫面中心為縮放基準）
+  const zoomBtn = (factor) => { if (sceneRef) sceneRef.zoomBy(factor, window.innerWidth / 2, window.innerHeight / 2); };
+  document.getElementById("btn-zoomin").addEventListener("click", () => zoomBtn(1.2));
+  document.getElementById("btn-zoomout").addEventListener("click", () => zoomBtn(1 / 1.2));
+
   const menu = document.getElementById("menu-panel");
   document.getElementById("btn-menu").addEventListener("click", () => menu.classList.toggle("hidden"));
   document.getElementById("btn-save").addEventListener("click", () => { toast(zoo.save() ? "已存檔 ✅" : "存檔失敗"); menu.classList.add("hidden"); });
