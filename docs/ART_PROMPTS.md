@@ -7,9 +7,10 @@
 ## 0. 共同規則（所有圖都適用，放進每個 prompt）
 
 - **風格**：可愛 Q 版（chibi）、扁平上色 + 柔和 cel-shading、細的深色描邊、光源左上、色彩明亮乾淨。
-- **背景**：最好是**透明背景**；但 AI 常做不到（會畫成白底或假棋盤格）。
-  **建議直接叫它畫「純白背景」**，再用 `tools/cutout.py` 從邊緣去背（會保留動物身上的白色部位）。
-  圖裡**不要**畫地板、陰影、邊框、文字（遊戲會自己畫影子）。
+- **背景（規則）**：**一律用「純白背景」(solid plain white background)**。
+  不要透明、不要棋盤格、不要漸層、不要地板/陰影/邊框/文字（遊戲會自己畫影子）。
+  生完用 `tools/cutout.py --bg FFFFFF` 從邊緣去背（會保留動物身上的白色部位）。
+  ＊每個 prompt 結尾都已含「solid plain white background」這句，照用即可。
 - **視角**：2.5D 等距風的「直立看板(billboard)」角色——角色站直、略為俯視 3/4 視角（約離地平線 30°）。
 - **構圖**：角色**水平置中**，**腳底貼齊畫面底部**（留約 6px 邊距）；同一張圖裡每一格的**大小、比例、顏色完全一致**。
 - **解析度**：先用 1024×1024 生成，再縮小到下面指定的目標尺寸（縮圖較銳利）。
@@ -30,7 +31,7 @@
 ### 通用 prompt 模板（把 {{ }} 換掉）
 ```
 A cute chibi {{ANIMAL}} character sprite sheet for a 2.5D isometric zoo game.
-Layout: a 4x4 grid, each cell 64x64 px, total image 256x256 px, transparent background (PNG alpha).
+Layout: a 4x4 grid, each cell 64x64 px, total image 256x256 px, solid plain white background.
 Rows top-to-bottom = facing direction: row1 facing the camera (front), row2 facing left,
 row3 facing right, row4 facing away (back).
 Columns left-to-right = a 4-frame walk cycle (legs alternating), looping smoothly.
@@ -52,7 +53,7 @@ colors across all 16 frames. No background, no ground, no drop shadow, no text, 
 ### 若 4×4 網格生不好 → 改用「單排方向」prompt（生 4 次，每次一個方向）
 ```
 A cute chibi {{ANIMAL}} ({{APPEARANCE}}), facing {{DIRECTION: front/left/right/back}},
-a horizontal strip of 4 walk-cycle frames, each 64x64 px (strip 256x64), transparent background,
+a horizontal strip of 4 walk-cycle frames, each 64x64 px (strip 256x64), solid plain white background,
 flat colors + soft cel shading, thin outline, centered, feet at bottom, consistent across frames,
 no background, no shadow, no text.
 ```
@@ -70,10 +71,12 @@ no background, no shadow, no text.
 **進食 prompt**（白底；{{ }} 換成動物）
 ```
 A cute chibi {{ANIMAL}} ({{APPEARANCE}}), side view, an EATING animation:
-a horizontal strip of 4 frames (each 64x64 px, strip 256x64), the animal lowers its head to eat
-from the ground and chews, looping. Solid plain WHITE background. Flat colors, soft cel shading,
-thin dark outline, top-left light. Centered, feet at the bottom, identical size/colors across frames.
-No ground, no shadow, no text.
+a horizontal strip of 4 frames (each 64x64 px, strip 256x64). In front of the animal there is FOOD on
+the floor ({{FOOD}}); the animal lowers its head to the food and chews, looping.
+Solid plain WHITE background. Flat colors, soft cel shading, thin dark outline, top-left light.
+Centered, feet at the bottom, identical size/colors across frames. No drop shadow, no text.
+({{FOOD}} examples — lion/monkey: a piece of red meat on a bone; elephant/giraffe: a pile of hay or leaves;
+penguin: a few small fish; pick what fits the animal.)
 ```
 
 **睡覺 prompt**（白底）
@@ -96,7 +99,7 @@ Centered, lying on the bottom of each frame, identical across frames. No ground,
 
 ```
 A cute chibi human visitor sprite sheet for a 2.5D isometric zoo game.
-Layout: 4x4 grid, each cell 48x64 px, total 192x256 px, transparent background.
+Layout: 4x4 grid, each cell 48x64 px, total 192x256 px, solid plain white background.
 Rows = facing front/left/right/back; columns = a 4-frame walk cycle.
 A casual park visitor (t-shirt and shorts, simple shoes), cheerful, chibi proportions
 (big head, small body). Flat colors, soft cel shading, thin outline, top-left light.
@@ -116,7 +119,7 @@ No background, no ground shadow, no text. Vary only the shirt color between diff
 ```
 An isometric 2.5D {{cafe / souvenir shop}} building for a cute zoo game, dimetric 2:1 perspective
 (matching 64x32 isometric tiles). The building footprint covers a 2x2 tile area; the base of the
-building is 128 px wide and bottom-center aligned. Canvas 128x160 px, transparent background.
+building is 128 px wide and bottom-center aligned. Canvas 128x160 px, solid plain white background.
 Cute cartoon style, flat colors, soft cel shading, thin outline, top-left light.
 {{cafe: warm brown wooden cafe with a coffee-cup sign and a small awning}}
 {{souvenir: blue gift shop with a present/gift sign and a striped awning}}
@@ -131,7 +134,7 @@ No ground tile, no shadow, no text other than a tiny icon on the sign.
 - 畫布 **64×96 px**，樹幹**底部中央**對齊地面，透明背景。
 
 ```
-A cute cartoon tree for an isometric zoo game. Canvas 64x96 px, transparent background.
+A cute cartoon tree for an isometric zoo game. Canvas 64x96 px, solid plain white background.
 Round leafy green canopy with soft cel shading, short brown trunk centered at the bottom.
 Flat colors, thin outline, top-left light. No ground, no shadow, no text.
 ```
@@ -145,7 +148,7 @@ Flat colors, thin outline, top-left light. No ground, no shadow, no text.
 
 ```
 A single isometric ground tile, diamond/rhombus shape exactly 64x32 px, top-down 2:1 dimetric,
-seamless tileable, transparent background outside the diamond. {{grass: green grass texture}}
+seamless tileable, solid plain white background outside the diamond. {{grass: green grass texture}}
 {{path: light sandy/dirt path}} {{plaza: light stone pavement}}. Flat colors, subtle texture,
 soft top-left light, no objects, no shadow, no text.
 ```
