@@ -120,7 +120,20 @@ Style: flat colors, soft cel shading, thin dark outline, top-left light. Centere
 Solid plain white background. No ground texture, no text other than the Zzz.
 ```
 
-> 進食/睡覺用**側面單排 4 格**即可（遊戲不分方向播放）。**逐格描述**是讓四格不同的關鍵。
+**待機 prompt（打哈欠，白底、自帶陰影、逐格描述）**
+```
+A cute chibi {{ANIMAL}} ({{APPEARANCE}}), side view, standing still — an IDLE / YAWNING animation as ONE horizontal strip of 4 DISTINCT frames (left to right), each frame clearly different so it animates:
+Frame 1: standing relaxed, mouth closed, eyes open, neutral.
+Frame 2: starting to yawn — mouth opening a little, head tilting up slightly, eyes beginning to squint.
+Frame 3: a big wide yawn — mouth open wide (show a little tongue), eyes squeezed shut.
+Frame 4: closing the mouth, looking sleepy/content, eyes half-open.
+Keep the animal standing in the SAME spot; only the mouth/head/eyes change between frames.
+Under the animal in EVERY frame, the SAME soft dark-grey oval shadow at the very bottom; it stands on the shadow.
+Style: flat colors, soft cel shading, thin dark outline, top-left light. Centered, feet and shadow at the bottom, same size/colors/position across frames except the yawn.
+Solid plain white background. No ground texture, no text.
+```
+
+> 待機/進食/睡覺用**側面單排 4 格**即可（遊戲不分方向播放）。**逐格描述**是讓四格不同的關鍵。
 
 ---
 
