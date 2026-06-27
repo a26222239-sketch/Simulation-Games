@@ -18,7 +18,11 @@ export class Renderer {
   // 在 scene.preload() 裡呼叫：嘗試載入玩家提供的圖（失敗不會中斷遊戲）
   static preload(scene) {
     scene.load.on("loaderror", () => {}); // 沒有對應圖檔就略過，改用佔位貼圖
-    for (const id of Object.keys(ANIMALS)) scene.load.spritesheet("animal_" + id, `assets/animal_${id}.png`, { frameWidth: 64, frameHeight: 64 });
+    for (const id of Object.keys(ANIMALS)) {
+      scene.load.spritesheet("animal_" + id, `assets/animal_${id}.png`, { frameWidth: 64, frameHeight: 64 });        // 走路(4方向×4格)
+      scene.load.spritesheet("animal_" + id + "_eat", `assets/animal_${id}_eat.png`, { frameWidth: 64, frameHeight: 64 });   // 進食(單排)
+      scene.load.spritesheet("animal_" + id + "_sleep", `assets/animal_${id}_sleep.png`, { frameWidth: 64, frameHeight: 64 }); // 睡覺(單排)
+    }
     scene.load.spritesheet("visitor", "assets/visitor.png", { frameWidth: 48, frameHeight: 64 });
     scene.load.image("cafe", "assets/cafe.png");
     scene.load.image("souvenir", "assets/souvenir.png");
@@ -45,15 +49,25 @@ export class Renderer {
 
   makeAnims() {
     const s = this.scene;
-    const build = (key) => {
+    // 走路：4 方向（每方向 4 格）
+    const buildWalk = (key) => {
       if (!this.animated(key)) return;
       for (const dir in ROW) {
         const r = ROW[dir], name = key + "_" + dir;
         if (!s.anims.exists(name)) s.anims.create({ key: name, frames: s.anims.generateFrameNumbers(key, { start: r * 4, end: r * 4 + 3 }), frameRate: 7, repeat: -1 });
       }
     };
-    for (const id of Object.keys(ANIMALS)) build("animal_" + id);
-    build("visitor");
+    // 單排動畫（進食/睡覺）：用整張的所有格
+    const buildLoop = (key, fps) => {
+      if (!this.animated(key)) return;
+      if (!s.anims.exists(key)) s.anims.create({ key, frames: s.anims.generateFrameNumbers(key, {}), frameRate: fps, repeat: -1 });
+    };
+    for (const id of Object.keys(ANIMALS)) {
+      buildWalk("animal_" + id);
+      buildLoop("animal_" + id + "_eat", 5);
+      buildLoop("animal_" + id + "_sleep", 3);
+    }
+    buildWalk("visitor");
   }
 
   // 生成佔位貼圖（沒有玩家圖時使用）
@@ -167,14 +181,23 @@ export class Renderer {
     const seenA = new Set();
     for (const st of zoo.structures) if (st.kind === "enclosure") for (const a of st.animals) {
       seenA.add(a);
+      const base = "animal_" + st.species;
       let sp = this.animalSprites.get(a);
-      const key = "animal_" + st.species;
-      if (!sp) { sp = scene.add.sprite(0, 0, key).setOrigin(0.5, 1); this.animalSprites.set(a, sp); a._species = st.species; }
+      if (!sp) { sp = scene.add.sprite(0, 0, base).setOrigin(0.5, 1); this.animalSprites.set(a, sp); }
+      // 依狀態挑貼圖（沒有對應圖就退回走路/待機）
+      let key = base;
+      if (a.state === "eat" && this.hasImg(base + "_eat")) key = base + "_eat";
+      else if (a.state === "sleep" && this.hasImg(base + "_sleep")) key = base + "_sleep";
+      if (sp.texture.key !== key) sp.setTexture(key);
       const p = gridToScreen(a.fx, a.fy);
-      const bob = (!this.animated(key) && a.moving) ? Math.abs(Math.sin(a.frame * 1.6)) * 2 : 0;
+      const bob = (!this.animated(base) && a.moving) ? Math.abs(Math.sin(a.frame * 1.6)) * 2 : 0;
       sp.setPosition(p.x, p.y - bob).setDepth(a.fx + a.fy);
       this.shadow(p.x, p.y, 18 * ANIMALS[st.species].size, 8 * ANIMALS[st.species].size);
-      if (this.animated(key)) { if (a.moving) sp.play(key + "_" + a.dir, true); else { sp.anims.stop(); sp.setFrame(ROW[a.dir] * 4); } }
+      if (key === base) { // 走路/待機（走路精靈圖）
+        if (this.animated(base)) { if (a.state === "walk" && a.moving) sp.play(base + "_" + a.dir, true); else { sp.anims.stop(); sp.setFrame(ROW[a.dir] * 4); } }
+      } else { // 進食/睡覺（單排動畫）
+        if (this.animated(key)) sp.play(key, true); else sp.anims.stop();
+      }
     }
     for (const [a, sp] of this.animalSprites) if (!seenA.has(a)) { sp.destroy(); this.animalSprites.delete(a); }
 

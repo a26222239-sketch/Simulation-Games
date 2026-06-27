@@ -101,8 +101,23 @@ export class Zoo {
     return { ok: true, msg: `加了一隻${ANIMALS[s.species].name}` };
   }
   makeAnimal(st) {
-    return { fx: st.ox + Math.random() * st.w, fy: st.oy + Math.random() * st.h,
-      tx: st.ox + Math.random() * st.w, ty: st.oy + Math.random() * st.h, t: 0, frame: 0, animTime: 0, moving: false, dir: "down" };
+    const a = { fx: st.ox + Math.random() * st.w, fy: st.oy + Math.random() * st.h,
+      tx: 0, ty: 0, state: "walk", stateT: 0, frame: 0, animTime: 0, moving: false, dir: "down" };
+    this.startWander(st, a);
+    return a;
+  }
+  startWander(st, a) {
+    a.tx = st.ox + Math.random() * (st.w - 0.2);
+    a.ty = st.oy + Math.random() * (st.h - 0.2);
+    a.state = "walk"; a.stateT = 6; // 最多走 6 秒到不了就改做別的
+  }
+  // 抵達後隨機選活動：再走 / 待機 / 進食 / 睡覺
+  pickActivity(st, a) {
+    const r = Math.random();
+    if (r < 0.40) this.startWander(st, a);
+    else if (r < 0.65) { a.state = "idle"; a.stateT = 2 + Math.random() * 3; }
+    else if (r < 0.85) { a.state = "eat"; a.stateT = 3 + Math.random() * 3; }
+    else { a.state = "sleep"; a.stateT = 5 + Math.random() * 5; }
   }
 
   // 魅力（影響遊客生成速度）
@@ -222,12 +237,17 @@ export class Zoo {
     else o.dir = sdy > 0 ? "down" : "up";
   }
   updAnimal(s, a, dt) {
-    a.animTime += dt; a.t -= dt;
-    if (a.t <= 0) { a.tx = s.ox + Math.random() * (s.w - 0.2); a.ty = s.oy + Math.random() * (s.h - 0.2); a.t = 1.5 + Math.random() * 2.5; }
-    const def = ANIMALS[s.species], dx = a.tx - a.fx, dy = a.ty - a.fy, d = Math.hypot(dx, dy);
-    if (d > 0.05) { a.moving = true; a.frame = Math.floor(a.animTime / 0.16) % 4; this.faceWorld(a, dx, dy);
-      a.fx += dx / d * def.speed * dt; a.fy += dy / d * def.speed * dt; }
-    else a.moving = false;
+    a.animTime += dt; a.stateT -= dt;
+    if (a.state === "walk") {
+      const def = ANIMALS[s.species], dx = a.tx - a.fx, dy = a.ty - a.fy, d = Math.hypot(dx, dy);
+      if (d > 0.06 && a.stateT > 0) {
+        a.moving = true; a.frame = Math.floor(a.animTime / 0.16) % 4; this.faceWorld(a, dx, dy);
+        a.fx += dx / d * def.speed * dt; a.fy += dy / d * def.speed * dt;
+      } else { a.moving = false; this.pickActivity(s, a); }     // 到達或逾時 → 選下一個活動
+    } else {
+      a.moving = false; a.frame = Math.floor(a.animTime / 0.28) % 4; // 進食/睡覺/待機的動畫格
+      if (a.stateT <= 0) this.startWander(s, a);
+    }
   }
 
   // ---- 存讀檔（遊客/動物即時狀態不存，重建）----

@@ -7,8 +7,9 @@
 ## 0. 共同規則（所有圖都適用，放進每個 prompt）
 
 - **風格**：可愛 Q 版（chibi）、扁平上色 + 柔和 cel-shading、細的深色描邊、光源左上、色彩明亮乾淨。
-- **背景**：**透明背景（transparent background, PNG with alpha）**，不要任何地板、陰影、邊框、文字。
-  （遊戲會自己畫地上的影子，所以圖裡**不要**畫影子。）
+- **背景**：最好是**透明背景**；但 AI 常做不到（會畫成白底或假棋盤格）。
+  **建議直接叫它畫「純白背景」**，再用 `tools/cutout.py` 從邊緣去背（會保留動物身上的白色部位）。
+  圖裡**不要**畫地板、陰影、邊框、文字（遊戲會自己畫影子）。
 - **視角**：2.5D 等距風的「直立看板(billboard)」角色——角色站直、略為俯視 3/4 視角（約離地平線 30°）。
 - **構圖**：角色**水平置中**，**腳底貼齊畫面底部**（留約 6px 邊距）；同一張圖裡每一格的**大小、比例、顏色完全一致**。
 - **解析度**：先用 1024×1024 生成，再縮小到下面指定的目標尺寸（縮圖較銳利）。
@@ -55,6 +56,36 @@ a horizontal strip of 4 walk-cycle frames, each 64x64 px (strip 256x64), transpa
 flat colors + soft cel shading, thin outline, centered, feet at bottom, consistent across frames,
 no background, no shadow, no text.
 ```
+
+### 動作狀態（走路 / 進食 / 睡覺）— 多張檔案
+
+遊戲會依動物狀態自動切換動畫。每種動物**最多 3 個檔**（缺的會自動退回走路/待機）：
+
+| 狀態 | 檔名 | 排版 | 尺寸 | 視角 |
+|---|---|---|---|---|
+| 走路 | `assets/animal_<id>.png` | 4列(前/左/右/後)×4格 | 256×256 | 各方向 |
+| 進食 | `assets/animal_<id>_eat.png` | 1排×4格 | 256×64 | 側面即可 |
+| 睡覺 | `assets/animal_<id>_sleep.png` | 1排×4格 | 256×64 | 側面躺下 |
+
+**進食 prompt**（白底；{{ }} 換成動物）
+```
+A cute chibi {{ANIMAL}} ({{APPEARANCE}}), side view, an EATING animation:
+a horizontal strip of 4 frames (each 64x64 px, strip 256x64), the animal lowers its head to eat
+from the ground and chews, looping. Solid plain WHITE background. Flat colors, soft cel shading,
+thin dark outline, top-left light. Centered, feet at the bottom, identical size/colors across frames.
+No ground, no shadow, no text.
+```
+
+**睡覺 prompt**（白底）
+```
+A cute chibi {{ANIMAL}} ({{APPEARANCE}}), side view, a SLEEPING animation:
+a horizontal strip of 4 frames (each 64x64 px, strip 256x64), the animal lies down curled up and
+breathes slowly (body gently rises and falls), with small "Zzz" above, looping.
+Solid plain WHITE background. Flat colors, soft cel shading, thin dark outline, top-left light.
+Centered, lying on the bottom of each frame, identical across frames. No ground, no shadow.
+```
+
+> 進食/睡覺用**側面單排 4 格**就好，不必畫四個方向（遊戲不分方向播放）。
 
 ---
 
@@ -156,10 +187,11 @@ same flat magenta (#FF00FF) background, same size, no shadow, no text.
 
 ## 6. 生圖後的處理流程（重點）
 
-1. **透明背景**：
-   - GPT：直接指定 transparent background。
-   - Gemini：畫在純洋紅 `#FF00FF` 底，再「色鍵去背」——Photopea：選取 → 顏色範圍 → 點洋紅 → 刪除；
-     或 ImageMagick：`convert in.png -fuzz 12% -transparent "#FF00FF" out.png`；或 remove.bg。
+1. **去背（推薦白底 → cutout.py）**：
+   - **白底（推薦）**：`python3 tools/cutout.py in.png out.png --bg FFFFFF --resize 256x256`
+     （進食/睡覺單排用 `--resize 256x64`）。從邊緣去背，動物身上的白色不會被刪。
+   - 純洋紅/綠底：`python3 tools/chroma_key.py in.png out.png --color FF00FF`。
+   - 複雜背景：`python3 tools/removebg.py in.png out.png`（開源 rembg）。
 2. **縮小到目標尺寸**：1024 生成 → 縮到 256×256（動物）/ 192×256（遊客）等。
 3. **對齊/切割**：精靈圖每格必須等分對齊。若是分開生的單格/單排，用免費工具拼成網格：
    - Piskel、Aseprite、TexturePacker，或用簡單腳本（ImageMagick `montage`）。

@@ -4,8 +4,13 @@
 
 | 背景情況 | 用哪個 | 需要下載模型？ |
 |---|---|---|
-| **純色背景**（建議：Gemini 畫在 `#FF00FF` 洋紅底） | `chroma_key.py` | 否（快、乾淨） |
+| **白底/單色底（推薦）** | `cutout.py`（從邊緣去背，保留主體內白色） | 否（快、乾淨） |
+| 純色底（洋紅/綠）整片去 | `chroma_key.py` | 否 |
 | **任意/複雜背景**（陰影、漸層、實景） | `removebg.py`（開源 rembg） | 是（首次約 170MB） |
+
+> `cutout.py` 最適合「叫 AI 畫純白背景」的情況——它只移除跟邊緣相連的背景，
+> 所以動物的白肚子、白眼睛不會被誤刪，還能順手 `--resize`。
+> 例：`python3 tools/cutout.py in.png assets/animal_lion_eat.png --bg FFFFFF --resize 256x64`
 
 > 這些是「在你電腦上跑」的前處理工具，跟網頁遊戲本身無關。處理完的透明 PNG 放進 `assets/` 即可。
 
