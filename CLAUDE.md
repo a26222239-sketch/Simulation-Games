@@ -22,10 +22,14 @@
 8. 走路四列順序：`row1 front / row2 LEFT / row3 RIGHT / row4 back`。
 9. **同一隻動物一致（重要）**：四張動作圖必須是**同一隻動物在做不同動作**，不只是顏色，
    連**畫風、體型/比例、鬃毛(毛髮)形狀與份量、五官、毛色/膚色**都要完全相同；只有姿勢/動作改變。
-   - 每個 prompt 都要加上：
-     `SAME-CHARACTER RULE: this is the SAME individual {{animal}} as the reference image — identical art style, body type and proportions, mane/fur shape and volume, facial features and colors (body color, belly, mane/tail shades). ONLY the pose/action changes; do NOT redesign or restyle the character, do NOT change any shade.`
-   - 使用者通常是**拿上一張圖叫 AI 續畫**，所以一定要強調「沿用參考圖/上一張」。
-   - 非洲獅基準：體色 golden-tan/golden-yellow、腹部淺奶油色、鬃毛與尾端 dark warm-brown、成年公獅滿鬃毛。
+   ★ 分兩種寫法：
+   - **走路(第一張、基準)**：不要寫「跟前一張一致」（它沒有前一張）。要**具體詳述這隻動物的所有特徵**
+     （體色＋腹部色＋鬃毛/毛髮形狀份量與顏色＋五官＋體型比例＋尾巴特徵），當成角色設定，
+     讓後面的圖有依循基礎。
+   - **進食/睡覺/待機(後續)**：使用者會**上傳走路那張當參考圖**再生，所以一定要加：
+     `SAME-CHARACTER RULE: this is the SAME individual animal as the reference image (the walk sheet) — identical art style, body type and proportions, mane/fur shape and volume, facial features and colors. ONLY the pose/action changes; do NOT redesign or restyle the character, do NOT change any shade.`
+   - 非洲獅基準：體色 golden-tan/golden-yellow、腹部/口鼻/腳掌淺奶油色、鬃毛與尾端 dark warm-brown、
+     成年公獅滿鬃毛、圓潤口鼻、小圓耳、琥珀色眼睛。
 
 ### 各動物畫素表（id：lion/elephant/penguin/monkey/giraffe）
 | 動物 | cell | 走路(4×4) | 單排(1×4) |
