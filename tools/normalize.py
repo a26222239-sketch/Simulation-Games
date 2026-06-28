@@ -130,6 +130,21 @@ def main():
         x = col * N + round(N / 2.0 - lion_cx)
         y = r * N + round((N - a.margin) - lion_bottom)
         out.paste(cc, (x, y), cc)
+
+    # 清掉每格內 <4px 的微小雜塊（鄰格滲入的碎點），不動本體/影子/Zzz
+    oarr = np.array(out)
+    for i in range(R * C):
+        r, col = divmod(i, C)
+        sub = oarr[r * N:(r + 1) * N, col * N:(col + 1) * N, :]
+        m = sub[:, :, 3] > 10
+        lbl, n = ndimage.label(m)
+        if n <= 1:
+            continue
+        sizes = ndimage.sum(np.ones_like(lbl), lbl, index=range(1, n + 1))
+        for k in range(1, n + 1):
+            if sizes[k - 1] < 4:
+                sub[lbl == k] = 0
+    out = Image.fromarray(oarr, "RGBA")
     out.save(a.dst)
     print(f"✓ normalize {a.src} -> {a.dst}  grid {R}x{C} cell {N}  lion {maxw}x{maxh} scale={scale:.3f}")
 
