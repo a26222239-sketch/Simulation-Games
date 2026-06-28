@@ -115,10 +115,11 @@ export class Zoo {
   // 抵達後隨機選活動：再走 / 待機 / 進食 / 睡覺
   pickActivity(st, a) {
     const r = Math.random();
-    if (r < 0.40) this.startWander(st, a);
-    else if (r < 0.65) { a.state = "idle"; a.stateT = 2 + Math.random() * 3; }
-    else if (r < 0.85) { a.state = "eat"; a.stateT = 10.2; a.eatStarted = false; } // 進食動畫約8秒，再停在骨頭約2秒
-    else { a.state = "sleep"; a.stateT = 5 + Math.random() * 5; }
+    // 待機(發呆)權重最高，其次走路，再來進食、睡覺
+    if (r < 0.50) { a.state = "idle"; a.stateT = 3 + Math.random() * 4; }        // 50% 最高
+    else if (r < 0.75) this.startWander(st, a);                                  // 25%
+    else if (r < 0.90) { a.state = "eat"; a.stateT = 10.2; a.eatStarted = false; } // 15% 進食動畫約8秒+骨頭停2秒
+    else { a.state = "sleep"; a.stateT = 5 + Math.random() * 5; }                // 10%
   }
 
   // 魅力（影響遊客生成速度）
