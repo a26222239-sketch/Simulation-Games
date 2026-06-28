@@ -81,7 +81,7 @@ export class Renderer {
     };
     for (const id of Object.keys(ANIMALS)) {
       buildWalk("animal_" + id);
-      buildLoop("animal_" + id + "_idle", 3);
+      buildLoop("animal_" + id + "_idle", 1.5); // 待機放慢，每格停久一點較從容
       buildEat("animal_" + id + "_eat");
       buildLoop("animal_" + id + "_sleep", 3);
     }
