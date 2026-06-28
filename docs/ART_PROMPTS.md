@@ -75,7 +75,7 @@ Solid plain white background, no ground texture, no text, no frame borders.
 ```
 
 ### 各動物的 {{APPEARANCE}}（替換用）
-- **lion 獅子（成年公獅）**：`Adult male lion with a full thick brown mane around the head and chest, golden-yellow body, strong adult proportions, a tufted tail tip; mature (NOT a cub).`
+- **lion 非洲獅（成年公獅）**：`Adult male AFRICAN lion with a full thick dark-brown mane around the head and chest, golden-tan body, strong mature proportions, a tufted tail tip; clearly an adult lion, NOT a cub.`
 - **elephant 大象（成年象）**：`Adult grey elephant with a big sturdy body, long thick legs, a long curled trunk, large ears, visible white tusks; mature proportions (NOT a baby, small head relative to the large body).`
 - **penguin 企鵝**：`Small black-and-white penguin, white belly, orange beak and feet, waddling pose.`
 - **monkey 猴子**：`Brown monkey with a lighter face and belly, long curly tail, big rounded ears.`
