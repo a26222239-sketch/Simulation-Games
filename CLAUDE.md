@@ -20,11 +20,12 @@
 6. **單排動作一律側面朝左**（遊戲會自動翻右）：`side view facing LEFT`。
 7. **逐格描述 + 4 DISTINCT frames**（避免四格一樣）。
 8. 走路四列順序：`row1 front / row2 LEFT / row3 RIGHT / row4 back`。
-9. **毛色/體色一致（重要）**：同一隻動物所有動作圖的體色與毛色必須**完全相同**。
-   - prompt 要寫明該動物的體色＋毛色，並加上：
-     `COLOR RULE: use the EXACT SAME body color and mane/fur colors as the reference image; do NOT change any shade.`
-   - 使用者通常是**拿上一張圖叫 AI 續畫**，所以一定要強調「沿用參考圖/上一張的顏色」。
-   - 非洲獅基準色：體色 golden-tan/golden-yellow、腹部淺奶油色、鬃毛與尾端 dark warm-brown。
+9. **同一隻動物一致（重要）**：四張動作圖必須是**同一隻動物在做不同動作**，不只是顏色，
+   連**畫風、體型/比例、鬃毛(毛髮)形狀與份量、五官、毛色/膚色**都要完全相同；只有姿勢/動作改變。
+   - 每個 prompt 都要加上：
+     `SAME-CHARACTER RULE: this is the SAME individual {{animal}} as the reference image — identical art style, body type and proportions, mane/fur shape and volume, facial features and colors (body color, belly, mane/tail shades). ONLY the pose/action changes; do NOT redesign or restyle the character, do NOT change any shade.`
+   - 使用者通常是**拿上一張圖叫 AI 續畫**，所以一定要強調「沿用參考圖/上一張」。
+   - 非洲獅基準：體色 golden-tan/golden-yellow、腹部淺奶油色、鬃毛與尾端 dark warm-brown、成年公獅滿鬃毛。
 
 ### 各動物畫素表（id：lion/elephant/penguin/monkey/giraffe）
 | 動物 | cell | 走路(4×4) | 單排(1×4) |

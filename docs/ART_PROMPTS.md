@@ -17,10 +17,11 @@
   （`config.js` 把該動物設 `bakedShadow: true`）。
 - **體型（規則）**：所有動物畫**成年**體型（mature/adult proportions），不要幼體/Q嬰兒比例；
   維持同一套可愛 cartoon 畫風。
-- **毛色/體色一致（規則）**：同一隻動物的**走路/進食/睡覺/待機**體色與毛色必須**完全相同**
-  （GPT 每次顏色會飄）。每個 prompt 要寫明該動物的體色＋毛色，並加上：
-  `COLOR RULE: use the EXACT SAME body color and mane/fur colors as the reference image; do NOT change any shade.`
-  使用者通常**拿上一張圖叫 AI 續畫**，所以務必要求「沿用參考圖/上一張的顏色」。
+- **同一隻動物一致（規則，重要）**：走路/進食/睡覺/待機四張必須是**同一隻動物做不同動作**——
+  不只是顏色，連**畫風、體型/比例、鬃毛(毛髮)形狀與份量、五官、毛色/膚色**都要完全相同，只有姿勢改變
+  （GPT 每次會飄）。每個 prompt 都要加上：
+  `SAME-CHARACTER RULE: this is the SAME individual animal as the reference image — identical art style, body type and proportions, mane/fur shape and volume, facial features and colors. ONLY the pose/action changes; do NOT redesign or restyle the character, do NOT change any shade.`
+  使用者通常**拿上一張圖叫 AI 續畫**，所以務必要求「沿用參考圖/上一張」。
 - **畫素 / 大小一致（規則，最重要）**：
   1. **每個 prompt 都要寫明確切畫素**：整張畫布尺寸＋單格(cell)尺寸（見下表），讓 AI 固定畫素輸出；
      後製只負責去背與輕微對齊，**不再每張各自縮放**。
