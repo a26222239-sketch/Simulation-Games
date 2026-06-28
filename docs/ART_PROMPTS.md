@@ -17,6 +17,13 @@
   （`config.js` 把該動物設 `bakedShadow: true`）。
 - **體型（規則）**：所有動物畫**成年**體型（mature/adult proportions），不要幼體/Q嬰兒比例；
   維持同一套可愛 cartoon 畫風。
+- **畫素 / 大小一致（規則，最重要）**：
+  1. **每個 prompt 都要寫明確切畫素**：整張畫布尺寸＋單格(cell)尺寸（見下表），讓 AI 固定畫素輸出；
+     後製只負責去背與輕微對齊，**不再每張各自縮放**。
+  2. **同一隻動物在「走路/進食/睡覺/待機」四張圖裡必須同一個大小**：
+     以**走路側面**為基準，動物的「站立身高(肩高/體高)」在四張圖完全一致。
+     ＊**進食/睡覺/待機不要放大或拉近**動物——只換動作，體型大小不變。
+  3. 動物本體**佔單格高度約 80%**，腳底（含陰影）貼齊格底、頂端留約 10% 邊距；四張圖佔比一致。
 - **去背（規則）**：動物精靈圖一律用 `tools/cut_keep_shadow.py`（rembg 取乾淨剪影＋保留原圖非白的陰影/Zzz/食物，
   並去掉腿縫白塊）。**不要**用純 rembg（會連陰影吃掉），也不要只用 flood-fill（腿縫會殘白）。
 - **視角**：2.5D 等距風的「直立看板(billboard)」角色——角色站直、略為俯視 3/4 視角（約離地平線 30°）。
@@ -50,19 +57,19 @@
 - 一張**精靈圖 sprite sheet**：**4 列 × 4 欄**
   - 列（上到下）＝面向：**第1列 面向鏡頭(前)、第2列 面向左、第3列 面向右、第4列 背對(後)**
   - 欄（左到右）＝走路 4 連續動作（走路循環）
-- 單格 **64×64 px**，整張 **256×256 px**，透明背景。
+- 單格與整張畫素見上表（獅子 cell48/整張192×192；大象 cell72/整張288×288）。**prompt 要寫死這些數字。**
 
-### 通用 prompt 模板（把 {{ }} 換掉）
+### 通用 prompt 模板（把 {{ }} 換掉；{{CELL}}=單格px、{{SHEET}}=整張px，見上表）
 ```
-A cute cartoon {{ANIMAL}} character sprite sheet for a 2.5D isometric zoo game.
-Layout: a 4x4 grid, each cell 64x64 px, total image 256x256 px, solid plain white background.
-Rows top-to-bottom = facing direction: row1 facing the camera (front), row2 facing left,
-row3 facing right, row4 facing away (back).
-Columns left-to-right = a 4-frame walk cycle (legs alternating), looping smoothly.
+A cute cartoon {{ANIMAL}} character sprite sheet for a 2.5D isometric zoo game, ADULT proportions.
+Output EXACT pixel size: a 4x4 grid, each cell EXACTLY {{CELL}}x{{CELL}} px, total image EXACTLY {{SHEET}} px, solid plain white background.
+Rows top-to-bottom = facing direction: row1 facing the camera (front), row2 facing LEFT,
+row3 facing RIGHT, row4 facing away (back).
+Columns left-to-right = a 4-frame walk cycle (legs alternating), looping smoothly, each frame DISTINCT.
 Style: flat colors with soft cel shading, thin dark outline, top-left light, bright and clean.
-The character is centered in each cell, feet aligned to the bottom of the cell, consistent size and
-colors across all 16 frames. Under the character in EVERY frame, the SAME DARK grey oval shadow (deep grey ~#555555, opaque,
-soft edge) at the very bottom, same size and position in all frames; the character stands on the shadow.
+SIZE RULE: the animal's standing body fills about 80% of the cell height, centered, feet aligned to the bottom of the cell;
+the SAME size in all 16 frames (do not zoom in/out between frames). This is the reference size — eat/sleep/idle sheets MUST use the exact same animal size.
+Under the character in EVERY frame, the SAME DARK grey oval shadow (deep grey ~#555555, opaque, soft edge) at the very bottom; it stands on the shadow.
 Solid plain white background, no ground texture, no text, no frame borders.
 {{APPEARANCE}}
 ```
@@ -103,7 +110,9 @@ with the SAME DARK grey oval shadow (deep grey ~#555555, opaque) under the feet 
 
 **進食 prompt**（白底、自帶陰影、逐格描述；{{ }} 換成動物）
 ```
-A cute cartoon {{ANIMAL}} ({{APPEARANCE}}), side view, an EATING animation as ONE horizontal strip of 4 DISTINCT frames (left to right), each frame clearly different so it animates. In front of the animal lies FOOD on the floor ({{FOOD}}):
+A cute cartoon {{ANIMAL}} ({{APPEARANCE}}), ADULT proportions, side view facing LEFT, an EATING animation as ONE horizontal strip of 4 DISTINCT frames (left to right), each frame clearly different so it animates. In front of the animal lies FOOD on the floor ({{FOOD}}):
+Output EXACT pixel size: one horizontal strip, each cell EXACTLY {{CELL}}x{{CELL}} px, total {{STRIP}} px, solid plain white background.
+SIZE RULE: the animal is the EXACT SAME size as in the walk sheet (same standing body height, about 80% of cell height) — do NOT zoom in or enlarge it for eating.
 Frame 1: head up, approaching the food, mouth closed.
 Frame 2: head lowered toward the food, mouth opening.
 Frame 3: biting the food, mouth on it, eyes closed.
@@ -117,7 +126,9 @@ Solid plain white background. No ground texture, no text.
 
 **睡覺 prompt**（白底、自帶陰影、逐格描述）
 ```
-A cute cartoon {{ANIMAL}} ({{APPEARANCE}}), side view, lying down asleep — a SLEEPING animation as ONE horizontal strip of 4 DISTINCT frames (left to right), each frame clearly different so it animates:
+A cute cartoon {{ANIMAL}} ({{APPEARANCE}}), ADULT proportions, side view facing LEFT, lying down asleep — a SLEEPING animation as ONE horizontal strip of 4 DISTINCT frames (left to right), each frame clearly different so it animates:
+Output EXACT pixel size: one horizontal strip, each cell EXACTLY {{CELL}}x{{CELL}} px, total {{STRIP}} px, solid plain white background.
+SIZE RULE: the animal is the EXACT SAME size as in the walk sheet (same body scale) — do NOT zoom in; a lying lion just occupies a lower, longer area but at the same scale.
 Frame 1: lying curled on its side, belly fully exhaled (lowest), eyes closed, a tiny "z" above the head.
 Frame 2: belly inhaling a little (slightly puffed), a small "Zz" rising higher.
 Frame 3: belly fully inhaled (puffed up the most), a larger "Zzz" floating up.
@@ -130,7 +141,9 @@ Solid plain white background. No ground texture, no text other than the Zzz.
 
 **待機 prompt（打哈欠，白底、自帶陰影、逐格描述）**
 ```
-A cute cartoon {{ANIMAL}} ({{APPEARANCE}}), side view, standing still — an IDLE / YAWNING animation as ONE horizontal strip of 4 DISTINCT frames (left to right), each frame clearly different so it animates:
+A cute cartoon {{ANIMAL}} ({{APPEARANCE}}), ADULT proportions, side view facing LEFT, standing still — an IDLE animation as ONE horizontal strip of 4 DISTINCT frames (left to right), each frame clearly different so it animates:
+Output EXACT pixel size: one horizontal strip, each cell EXACTLY {{CELL}}x{{CELL}} px, total {{STRIP}} px, solid plain white background.
+SIZE RULE: the animal is the EXACT SAME size as in the walk sheet (same standing body height) — do NOT zoom in.
 Frame 1: standing relaxed, mouth closed, eyes open, neutral.
 Frame 2: starting to yawn — mouth opening a little, head tilting up slightly, eyes beginning to squint.
 Frame 3: a big wide yawn — mouth open wide (show a little tongue), eyes squeezed shut.
