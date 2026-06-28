@@ -117,11 +117,12 @@ with the SAME DARK grey oval shadow (deep grey ~#555555, opaque) under the feet 
 A cute cartoon {{ANIMAL}} ({{APPEARANCE}}), ADULT proportions, side view facing LEFT, an EATING animation as ONE horizontal strip of 4 DISTINCT frames (left to right), each frame clearly different so it animates. In front of the animal lies FOOD on the floor ({{FOOD}}):
 Output EXACT pixel size: one horizontal strip, each cell EXACTLY {{CELL}}x{{CELL}} px, total {{STRIP}} px, solid plain white background.
 SIZE RULE: the animal is the EXACT SAME size as in the walk sheet (same standing body height, about 80% of cell height) — do NOT zoom in or enlarge it for eating.
-Frame 1: head up, approaching the food, mouth closed.
+Frame 1: head up near the food, mouth closed.
 Frame 2: head lowered toward the food, mouth opening.
 Frame 3: biting the food, mouth on it, eyes closed.
-Frame 4: head up again chewing; the food is mostly gone (only a small leftover remains).
-Keep the animal in the same spot; only the head/mouth and the food amount change between frames.
+Frame 4: head up again chewing; the food is eaten — only the bare bone remains.
+FOOD RULE: in frames 1-3 the food (meat on a bone) is the EXACT SAME size, shape, color and position in all three frames — do NOT change it. In frame 4 only the bare bone is left, and that bone is the EXACT SAME size as the bone shown in frames 1-3.
+Keep the animal in the SAME spot; only the head/mouth change in frames 1-3, and the food becomes the bone only in frame 4. Everything else not mentioned (appearance, colors, pose) stays unchanged.
 Under the animal in EVERY frame, the SAME DARK grey oval shadow (deep grey ~#555555, opaque, soft edge) at the very bottom; it stands on the shadow.
 Style: flat colors, soft cel shading, thin dark outline, top-left light. Centered, feet and shadow at the bottom, same size/colors across frames.
 Solid plain white background. No ground texture, no text.
