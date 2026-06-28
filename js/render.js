@@ -9,7 +9,7 @@ import { TILE_W, TILE_H, GROUND, STRUCTURES, ANIMALS } from "./config.js";
 import { gridToScreen } from "./iso.js";
 
 const HW = TILE_W / 2, HH = TILE_H / 2;
-const ASSET_VER = 15; // 換 assets 圖後 +1，自動破壞快取載新圖
+const ASSET_VER = 16; // 換 assets 圖後 +1，自動破壞快取載新圖
 const toInt = (h) => parseInt(h.slice(1), 16);
 const ROW = { down: 0, left: 1, right: 2, up: 3 }; // 精靈圖方向列順序：前/左/右/後
 
@@ -206,7 +206,7 @@ export class Renderer {
       // 依狀態挑貼圖（沒有對應圖就退回走路/待機站立）
       let key = base;
       if (a.state === "eat" && this.hasImg(base + "_eat")) key = base + "_eat";
-      else if (a.state === "sleep" && this.hasImg(base + "_sleep")) key = base + "_sleep";
+      else if (a.state === "sleep") key = this.hasImg(base + "_sleep") ? base + "_sleep" : (this.hasImg(base + "_idle") ? base + "_idle" : base); // 沒有睡覺圖時退回盤坐
       else if (a.state === "idle" && this.hasImg(base + "_idle")) key = base + "_idle"; // 待機時一直播待機動畫(盤坐發呆)
       if (sp.texture.key !== key) sp.setTexture(key);
       // 進食/睡覺/待機是單方向圖(原圖朝左)；動物面向右時水平翻轉，左右都有
