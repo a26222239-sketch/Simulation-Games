@@ -38,7 +38,7 @@ export const STRUCTURES = {
 //   遊戲會依各動物的 frame 載入並顯示，所以大象天生比企鵝大。
 //   精靈圖用 rembg 去背(會連陰影一起去掉)，所以影子由程式繪製（見 render.js）。
 export const ANIMALS = {
-  lion:     { name: "獅子", body: "#d9a441", accent: "#a87a2a", buy: 200, popularity: 6, speed: 0.7, size: 1.1, frame: 48 },
+  lion:     { name: "獅子", body: "#d9a441", accent: "#a87a2a", buy: 200, popularity: 6, speed: 0.7, size: 1.1, frame: 48, bakedShadow: true },
   elephant: { name: "大象", body: "#9aa0a6", accent: "#787e84", buy: 350, popularity: 8, speed: 0.5, size: 1.4, frame: 72 },
   penguin:  { name: "企鵝", body: "#2b2f36", accent: "#f1f1f1", buy: 150, popularity: 5, speed: 0.9, size: 0.8, frame: 36 },
   monkey:   { name: "猴子", body: "#8a5a3b", accent: "#caa46a", buy: 180, popularity: 5, speed: 1.1, size: 0.8, frame: 42 },

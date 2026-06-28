@@ -6,13 +6,19 @@
 
 ## 0. 共同規則（所有圖都適用，放進每個 prompt）
 
-- **風格**：可愛 Q 版（chibi）、扁平上色 + 柔和 cel-shading、細的深色描邊、光源左上、色彩明亮乾淨。
+- **風格**：可愛 cartoon 畫風（成年體型，非嬰兒比例）、扁平上色 + 柔和 cel-shading、細的深色描邊、光源左上、色彩明亮乾淨。
 - **背景（規則）**：**一律用「純白背景」(solid plain white background)**。
   不要透明、不要棋盤格、不要漸層、不要地板/邊框/文字。
-  生完用 `tools/cutout.py --bg FFFFFF` 從邊緣去背（會保留動物身上的白色部位與陰影）。
-- **陰影（規則）**：**每一格底部要自帶一個柔和的橢圓陰影**，動物站/趴在陰影上；
+- **陰影（規則，重要）**：**每一格底部都要自帶一個橢圓陰影**，動物站/趴在陰影上；
   陰影在每一格的**大小與位置都一致**（不然切換動作會跳）。
-  ＊遊戲已對「有圖的動物」關閉程式影子，所以影子請務必畫進圖裡。
+  **陰影要畫「深色」(深灰，約 #555555，不透明、邊緣可微羽化)**——越深、和純白背景對比越大，
+  去背越乾淨。不要用淺灰或半透明淡影。
+  ＊規則：**所有動物的陰影一律畫進圖檔裡**，遊戲端不再用程式畫影子
+  （`config.js` 把該動物設 `bakedShadow: true`）。
+- **體型（規則）**：所有動物畫**成年**體型（mature/adult proportions），不要幼體/Q嬰兒比例；
+  維持同一套可愛 cartoon 畫風。
+- **去背（規則）**：動物精靈圖一律用 `tools/cut_keep_shadow.py`（rembg 取乾淨剪影＋保留原圖非白的陰影/Zzz/食物，
+  並去掉腿縫白塊）。**不要**用純 rembg（會連陰影吃掉），也不要只用 flood-fill（腿縫會殘白）。
 - **視角**：2.5D 等距風的「直立看板(billboard)」角色——角色站直、略為俯視 3/4 視角（約離地平線 30°）。
 - **構圖**：角色**水平置中**，**腳底貼齊畫面底部**（留約 6px 邊距）；同一張圖裡每一格的**大小、比例、顏色完全一致**。
 - **解析度**：先用 1024×1024 生成，再縮小到下面指定的目標尺寸（縮圖較銳利）。
@@ -48,20 +54,22 @@
 
 ### 通用 prompt 模板（把 {{ }} 換掉）
 ```
-A cute chibi {{ANIMAL}} character sprite sheet for a 2.5D isometric zoo game.
+A cute cartoon {{ANIMAL}} character sprite sheet for a 2.5D isometric zoo game.
 Layout: a 4x4 grid, each cell 64x64 px, total image 256x256 px, solid plain white background.
 Rows top-to-bottom = facing direction: row1 facing the camera (front), row2 facing left,
 row3 facing right, row4 facing away (back).
 Columns left-to-right = a 4-frame walk cycle (legs alternating), looping smoothly.
 Style: flat colors with soft cel shading, thin dark outline, top-left light, bright and clean.
 The character is centered in each cell, feet aligned to the bottom of the cell, consistent size and
-colors across all 16 frames. No background, no ground, no drop shadow, no text, no frame borders.
+colors across all 16 frames. Under the character in EVERY frame, the SAME DARK grey oval shadow (deep grey ~#555555, opaque,
+soft edge) at the very bottom, same size and position in all frames; the character stands on the shadow.
+Solid plain white background, no ground texture, no text, no frame borders.
 {{APPEARANCE}}
 ```
 
 ### 各動物的 {{APPEARANCE}}（替換用）
-- **lion 獅子**：`Golden-yellow lion with a fluffy brown mane around the head, small round ears, friendly face.`
-- **elephant 大象**：`Light grey elephant with big floppy ears, a short curled trunk, small tusks, chunky legs.`
+- **lion 獅子（成年公獅）**：`Adult male lion with a full thick brown mane around the head and chest, golden-yellow body, strong adult proportions, a tufted tail tip; mature (NOT a cub).`
+- **elephant 大象（成年象）**：`Adult grey elephant with a big sturdy body, long thick legs, a long curled trunk, large ears, visible white tusks; mature proportions (NOT a baby, small head relative to the large body).`
 - **penguin 企鵝**：`Small black-and-white penguin, white belly, orange beak and feet, waddling pose.`
 - **monkey 猴子**：`Brown monkey with a lighter face and belly, long curly tail, big rounded ears.`
 - **giraffe 長頸鹿**：`Yellow giraffe with brown patches, a long neck, two small horns (ossicones), tall thin legs.`
@@ -70,10 +78,10 @@ colors across all 16 frames. No background, no ground, no drop shadow, no text, 
 
 ### 若 4×4 網格生不好 → 改用「單排方向」prompt（生 4 次，每次一個方向）
 ```
-A cute chibi {{ANIMAL}} ({{APPEARANCE}}), facing {{DIRECTION: front/left/right/back}},
+A cute cartoon {{ANIMAL}} ({{APPEARANCE}}), facing {{DIRECTION: front/left/right/back}},
 a horizontal strip of 4 walk-cycle frames, each 64x64 px (strip 256x64), solid plain white background,
 flat colors + soft cel shading, thin outline, centered, feet at bottom, consistent across frames,
-no background, no shadow, no text.
+with the SAME DARK grey oval shadow (deep grey ~#555555, opaque) under the feet in every frame, no text.
 ```
 
 ### 動作狀態（走路 / 進食 / 睡覺）— 多張檔案
@@ -95,13 +103,13 @@ no background, no shadow, no text.
 
 **進食 prompt**（白底、自帶陰影、逐格描述；{{ }} 換成動物）
 ```
-A cute chibi {{ANIMAL}} ({{APPEARANCE}}), side view, an EATING animation as ONE horizontal strip of 4 DISTINCT frames (left to right), each frame clearly different so it animates. In front of the animal lies FOOD on the floor ({{FOOD}}):
+A cute cartoon {{ANIMAL}} ({{APPEARANCE}}), side view, an EATING animation as ONE horizontal strip of 4 DISTINCT frames (left to right), each frame clearly different so it animates. In front of the animal lies FOOD on the floor ({{FOOD}}):
 Frame 1: head up, approaching the food, mouth closed.
 Frame 2: head lowered toward the food, mouth opening.
 Frame 3: biting the food, mouth on it, eyes closed.
 Frame 4: head up again chewing; the food is mostly gone (only a small leftover remains).
 Keep the animal in the same spot; only the head/mouth and the food amount change between frames.
-Under the animal in EVERY frame, the SAME soft dark-grey oval shadow at the very bottom; it stands on the shadow.
+Under the animal in EVERY frame, the SAME DARK grey oval shadow (deep grey ~#555555, opaque, soft edge) at the very bottom; it stands on the shadow.
 Style: flat colors, soft cel shading, thin dark outline, top-left light. Centered, feet and shadow at the bottom, same size/colors across frames.
 Solid plain white background. No ground texture, no text.
 ({{FOOD}} — lion/monkey: red meat on a bone; elephant/giraffe: hay or leaves; penguin: small fish.)
@@ -109,26 +117,26 @@ Solid plain white background. No ground texture, no text.
 
 **睡覺 prompt**（白底、自帶陰影、逐格描述）
 ```
-A cute chibi {{ANIMAL}} ({{APPEARANCE}}), side view, lying down asleep — a SLEEPING animation as ONE horizontal strip of 4 DISTINCT frames (left to right), each frame clearly different so it animates:
+A cute cartoon {{ANIMAL}} ({{APPEARANCE}}), side view, lying down asleep — a SLEEPING animation as ONE horizontal strip of 4 DISTINCT frames (left to right), each frame clearly different so it animates:
 Frame 1: lying curled on its side, belly fully exhaled (lowest), eyes closed, a tiny "z" above the head.
 Frame 2: belly inhaling a little (slightly puffed), a small "Zz" rising higher.
 Frame 3: belly fully inhaled (puffed up the most), a larger "Zzz" floating up.
 Frame 4: belly exhaling again (settling down), the "Zzz" fading near the top.
 Keep the animal in the SAME spot and lying pose; ONLY the belly size (breathing) and the floating "Zzz" change between frames.
-Under the animal in EVERY frame, the SAME soft dark-grey oval shadow at the very bottom; it lies on the shadow.
+Under the animal in EVERY frame, the SAME DARK grey oval shadow (deep grey ~#555555, opaque, soft edge) at the very bottom; it lies on the shadow.
 Style: flat colors, soft cel shading, thin dark outline, top-left light. Centered, body and shadow at the bottom, same size/colors/position across frames except breathing and Zzz.
 Solid plain white background. No ground texture, no text other than the Zzz.
 ```
 
 **待機 prompt（打哈欠，白底、自帶陰影、逐格描述）**
 ```
-A cute chibi {{ANIMAL}} ({{APPEARANCE}}), side view, standing still — an IDLE / YAWNING animation as ONE horizontal strip of 4 DISTINCT frames (left to right), each frame clearly different so it animates:
+A cute cartoon {{ANIMAL}} ({{APPEARANCE}}), side view, standing still — an IDLE / YAWNING animation as ONE horizontal strip of 4 DISTINCT frames (left to right), each frame clearly different so it animates:
 Frame 1: standing relaxed, mouth closed, eyes open, neutral.
 Frame 2: starting to yawn — mouth opening a little, head tilting up slightly, eyes beginning to squint.
 Frame 3: a big wide yawn — mouth open wide (show a little tongue), eyes squeezed shut.
 Frame 4: closing the mouth, looking sleepy/content, eyes half-open.
 Keep the animal standing in the SAME spot; only the mouth/head/eyes change between frames.
-Under the animal in EVERY frame, the SAME soft dark-grey oval shadow at the very bottom; it stands on the shadow.
+Under the animal in EVERY frame, the SAME DARK grey oval shadow (deep grey ~#555555, opaque, soft edge) at the very bottom; it stands on the shadow.
 Style: flat colors, soft cel shading, thin dark outline, top-left light. Centered, feet and shadow at the bottom, same size/colors/position across frames except the yawn.
 Solid plain white background. No ground texture, no text.
 ```
@@ -235,11 +243,14 @@ same flat magenta (#FF00FF) background, same size, no shadow, no text.
 
 ## 6. 生圖後的處理流程（重點）
 
-1. **去背（推薦白底 → cutout.py）**：
-   - **白底（推薦）**：`python3 tools/cutout.py in.png out.png --bg FFFFFF --resize 256x256`
-     （進食/睡覺單排用 `--resize 256x64`）。從邊緣去背，動物身上的白色不會被刪。
-   - 純洋紅/綠底：`python3 tools/chroma_key.py in.png out.png --color FF00FF`。
-   - 複雜背景：`python3 tools/removebg.py in.png out.png`（開源 rembg）。
+1. **去背（動物精靈圖一律用 cut_keep_shadow.py）**：
+   - **自帶陰影的動物圖（標準流程）**：
+     `python3 tools/cut_keep_shadow.py in.png out.png --grid 4x4`（單排用 `--grid 1x4`）
+     → 再 `python3 tools/normalize.py out.png assets/animal_<id>.png --grid 4x4 --cell <N>`。
+     會保留陰影/Zzz/食物、去掉腿縫白、眼白不受影響。
+   - 其他素材（建築/樹/無陰影圖）才用：`tools/cutout.py --bg FFFFFF`（白底）、
+     `tools/chroma_key.py --color FF00FF`（洋紅/綠底）。
+   - ⚠️ 不要對「自帶陰影」的動物用純 rembg（`removebg.py`）：會把陰影一起去掉。
 2. **縮小到目標尺寸**：1024 生成 → 縮到 256×256（動物）/ 192×256（遊客）等。
 3. **對齊/切割**：精靈圖每格必須等分對齊。若是分開生的單格/單排，用免費工具拼成網格：
    - Piskel、Aseprite、TexturePacker，或用簡單腳本（ImageMagick `montage`）。

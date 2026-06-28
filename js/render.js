@@ -9,7 +9,7 @@ import { TILE_W, TILE_H, GROUND, STRUCTURES, ANIMALS } from "./config.js";
 import { gridToScreen } from "./iso.js";
 
 const HW = TILE_W / 2, HH = TILE_H / 2;
-const ASSET_VER = 9; // 換 assets 圖後 +1，自動破壞快取載新圖
+const ASSET_VER = 10; // 換 assets 圖後 +1，自動破壞快取載新圖
 const toInt = (h) => parseInt(h.slice(1), 16);
 const ROW = { down: 0, left: 1, right: 2, up: 3 }; // 精靈圖方向列順序：前/左/右/後
 
@@ -214,9 +214,8 @@ export class Renderer {
       const p = gridToScreen(a.fx, a.fy);
       const bob = (!this.animated(base) && a.moving) ? Math.abs(Math.sin(a.frame * 1.6)) * 2 : 0;
       sp.setPosition(p.x, p.y - bob).setDepth(a.fx + a.fy);
-      // 影子由程式繪製(精靈圖用 rembg 去背已不含陰影)，大小依動物體型、腳底對齊
-      const fr = ANIMALS[st.species].frame || 48;
-      this.shadow(p.x, p.y, fr * 0.6, fr * 0.22);
+      // 陰影規則：有「自帶陰影」精靈圖的動物(bakedShadow)不畫程式影子；其餘暫用程式影子直到有自帶陰影的圖
+      if (!ANIMALS[st.species].bakedShadow) { const fr = ANIMALS[st.species].frame || 48; this.shadow(p.x, p.y, fr * 0.6, fr * 0.22); }
       if (key === base) { // 走路/待機（走路精靈圖）
         if (this.animated(base)) { if (a.state === "walk" && a.moving) sp.play(base + "_" + a.dir, true); else { sp.anims.stop(); sp.setFrame(ROW[a.dir] * 4); } }
       } else { // 進食/睡覺/打哈欠（單排動畫）
