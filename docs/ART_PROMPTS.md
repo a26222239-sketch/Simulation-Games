@@ -76,7 +76,15 @@ A cute cartoon {{ANIMAL}} character sprite sheet for a 2.5D isometric zoo game, 
 Output EXACT pixel size: a 6x4 grid, each cell EXACTLY {{CELL}}x{{CELL}} px, total image EXACTLY {{SHEET}} px, solid plain white background.
 Rows top-to-bottom = facing direction: row1 facing the camera (front), row2 facing LEFT,
 row3 facing RIGHT, row4 facing away (back).
-Columns left-to-right = ONE continuous walk cycle sampled at 6 EVENLY-SPACED phases (not 6 unrelated poses): the legs step through a smooth gait in order, the body bobs slightly, and frame 6 connects SEAMLESSLY back to frame 1 (a perfect loop). Per phase (side rows; front/back rows show the same gait phases): F1 near foreleg reaches forward & touches down while near hindleg pushes off behind; F2 near foreleg plants under the body, near hindleg lifts and swings forward, body highest; F3 near foreleg pushes back, near hindleg swings forward past vertical; F4 near hindleg touches down forward while near foreleg pushes off behind (mirror of F1); F5 near hindleg plants, near foreleg lifts and swings forward, body highest; F6 near hindleg pushes back, near foreleg swings forward past vertical (leads back into F1). Opposite-side legs do the inverse.
+Columns left-to-right = ONE continuous walk cycle at 6 EVENLY-SPACED phases that loops (frame 6 → frame 1).
+LEG MOTION — CRITICAL, the most important part: the legs MUST visibly ALTERNATE like real walking; do NOT keep the same leg stance across frames (that looks like marching in place). Across the 6 frames the NEAR foreleg makes one full swing FORWARD→BACK→FORWARD, and the FAR foreleg is in the OPPOSITE phase; the hind legs mirror the forelegs diagonally. Side rows (left/right):
+F1: legs SPREAD — near foreleg stretched far FORWARD, near hindleg stretched far BACK.
+F2: legs passing — near foreleg pulling back toward vertical, near hindleg swinging forward toward vertical (legs nearly together under the body).
+F3: legs SPREAD THE OTHER WAY — near foreleg now BACK, near hindleg now FORWARD (clearly swapped vs F1).
+F4: legs spread, near foreleg far FORWARD again but it is the FAR-side foreleg leading now (opposite legs to F1).
+F5: legs passing again (legs near together under the body).
+F6: legs spread, leading back into F1's pose for a seamless loop.
+Make the difference between "spread" frames and "passing" frames obvious, and make sure which leg is forward clearly changes from frame to frame.
 Style: flat colors with soft cel shading, thin dark outline, top-left light, bright and clean.
 SIZE RULE: the animal's standing body fills about 80% of the cell height, centered, feet aligned to the bottom of the cell;
 the SAME size in all 16 frames (do not zoom in/out between frames). This is the reference size — eat/sleep/idle sheets MUST use the exact same animal size.
