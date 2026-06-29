@@ -22,6 +22,8 @@
 3. **深色陰影畫進圖**：`the SAME DARK grey oval shadow (deep grey ~#555555, opaque, soft edge) under it in EVERY frame`。
 4. **大小一致**：`SIZE RULE: the animal is the EXACT SAME size as the walk sheet（走路為基準，body ~80% 格高）；吃/睡/待機不可放大/拉近`。
 5. **純白背景**：`solid plain white background, no ground, no text`。
+5b. **存成 PNG，不要 JPEG（重要）**：下載/匯出一律用 **PNG**。JPEG 壓縮會讓白底出現灰雜訊、
+    獅子邊緣有灰邊，去背會髒、留灰邊。收到 JPEG 要請使用者改存 PNG 再傳。
 6. **單排動作一律側面朝左**（遊戲會自動翻右）：`side view facing LEFT`。
 7. **逐格描述 + 6 DISTINCT frames**（避免六格一樣）。
 8. 走路四列順序：`row1 front / row2 LEFT / row3 RIGHT / row4 back`。
