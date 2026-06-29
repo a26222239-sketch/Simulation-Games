@@ -132,8 +132,9 @@ Frame 3: jaw open wide, taking a bite (chewing).
 Frame 4: jaw closing again (chewing).
 Frame 5: mouth closed, head in the same lowered position — drawn so it flows SEAMLESSLY back into Frame 1 (a perfect loop).
 Frame 6: head lifted up; the food is finished — only the bare bone remains.
-LOOP RULE: in frames 1-5 the head stays DOWN at the food and ONLY the jaw/mouth moves (a small chewing cycle); frame 5 must connect smoothly to frame 1 so looping 1→2→3→4→5→1 is continuous (no jump).
-FOOD RULE: in frames 1-5 the food (meat on a bone) is the EXACT SAME size, shape, color and position — do NOT change it. In frame 6 only the bare bone remains, the EXACT SAME size as the bone in frames 1-5.
+CONTACT RULE: the lion's open mouth/muzzle is RIGHT ON the meat, actually biting and touching it — the head is lowered ALL THE WAY DOWN to the food; do NOT leave a gap (no biting the air above the meat).
+LOOP RULE: in frames 1-5 the head stays DOWN with the mouth on the meat and ONLY the jaw moves (a small chewing cycle); frame 5 must connect smoothly to frame 1 so looping 1→2→3→4→5→1 is continuous (no jump).
+FOOD RULE: in frames 1-5 the meat keeps the EXACT SAME shape, size, color and position in every frame — the meat outline must NOT change at all (this is required for a smooth loop). In frame 6 only the bare bone remains, and that bone is the EXACT SAME size as the bone that is part of the meat in frames 1-5.
 Everything else not mentioned (appearance, colors, body pose) stays unchanged across all frames.
 Under the animal in EVERY frame, the SAME DARK grey oval shadow (deep grey ~#555555, opaque, soft edge) at the very bottom; fully inside the cell.
 SPACING RULE: leave generous empty padding around the animal, its shadow and the food; each frame fully inside its own cell with clear gaps; nothing touches or crosses the cell borders.
