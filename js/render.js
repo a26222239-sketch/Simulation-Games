@@ -70,16 +70,16 @@ export class Renderer {
       if (!this.animated(key)) return;
       if (!s.anims.exists(key)) s.anims.create({ key, frames: s.anims.generateFrameNumbers(key, {}), frameRate: fps, repeat: -1 });
     };
-    // 進食：第0格起手 → 中間咀嚼格(1..n-2)來回擺動約8秒 → 停在最後一格(骨頭)，只播一次
-    // 自動支援 4 或 6 格：咀嚼格用所有中間格，末格為骨頭
+    // 進食：第0格起手 → 中間咀嚼格(1..n-2)順暢來回約8秒 → 停在最後一格(骨頭)，只播一次
+    // 來回不重複端點(yo-yo)，避免轉折處同格重播造成卡頓；自動支援 4 或 6 格
     const buildEat = (key) => {
       if (!this.animated(key)) return;
       const n = s.textures.get(key).frameTotal - 1; // 去掉 __BASE，總格數
       let seq;
       if (n >= 4) {
         seq = [0];
-        const mid = []; for (let i = 1; i <= n - 2; i++) mid.push(i); // 咀嚼格
-        const wave = mid.concat([...mid].reverse());                 // 來回擺動
+        const mid = []; for (let i = 1; i <= n - 2; i++) mid.push(i);     // 咀嚼格
+        const wave = mid.concat(mid.slice(1, -1).reverse());             // 1,2,…,m,…,2 不重複端點
         for (let i = 0; seq.length < 22; i++) seq.push(wave[i % wave.length]);
         seq.push(n - 1); // 最後停在骨頭(末格)
       }
