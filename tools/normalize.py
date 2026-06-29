@@ -131,7 +131,8 @@ def main():
         y = r * N + round((N - a.margin) - lion_bottom)
         out.paste(cc, (x, y), cc)
 
-    # 清掉每格內 <4px 的微小雜塊（鄰格滲入的碎點），不動本體/影子/Zzz
+    # 清掉每格「碰到左右邊緣」的 <4px 微小雜塊（鄰格滲入都在格縫邊緣）；
+    # 只清貼邊的碎點，保留中間的小元素(如 frame1 那個很小的 z)
     oarr = np.array(out)
     for i in range(R * C):
         r, col = divmod(i, C)
@@ -142,7 +143,9 @@ def main():
             continue
         sizes = ndimage.sum(np.ones_like(lbl), lbl, index=range(1, n + 1))
         for k in range(1, n + 1):
-            if sizes[k - 1] < 4:
+            ys, xs = np.where(lbl == k)
+            touches_side = (xs.min() == 0) or (xs.max() == N - 1)
+            if sizes[k - 1] < 4 and touches_side:
                 sub[lbl == k] = 0
     out = Image.fromarray(oarr, "RGBA")
     out.save(a.dst)
