@@ -9,7 +9,7 @@ import { TILE_W, TILE_H, GROUND, STRUCTURES, ANIMALS } from "./config.js";
 import { gridToScreen } from "./iso.js";
 
 const HW = TILE_W / 2, HH = TILE_H / 2;
-const ASSET_VER = 26; // 換 assets 圖後 +1，自動破壞快取載新圖
+const ASSET_VER = 27; // 換 assets 圖後 +1，自動破壞快取載新圖
 const toInt = (h) => parseInt(h.slice(1), 16);
 const ROW = { down: 0, left: 1, right: 2, up: 3 }; // 精靈圖方向列順序：前/左/右/後
 
@@ -27,6 +27,7 @@ export class Renderer {
       scene.load.spritesheet("animal_" + id + "_idle", `assets/animal_${id}_idle.png${v}`, { frameWidth: fr, frameHeight: fr });   // 待機(單排，可選)
       scene.load.spritesheet("animal_" + id + "_eat", `assets/animal_${id}_eat.png${v}`, { frameWidth: fr, frameHeight: fr });   // 進食(單排)
       scene.load.spritesheet("animal_" + id + "_sleep", `assets/animal_${id}_sleep.png${v}`, { frameWidth: fr, frameHeight: fr }); // 睡覺(單排)
+      scene.load.spritesheet("animal_" + id + "_yawn", `assets/animal_${id}_yawn.png${v}`, { frameWidth: fr, frameHeight: fr });   // 待機-打哈欠(單排，可選)
     }
     scene.load.spritesheet("visitor", `assets/visitor.png${v}`, { frameWidth: 48, frameHeight: 64 });
     scene.load.image("cafe", `assets/cafe.png${v}`);
@@ -82,6 +83,7 @@ export class Renderer {
     for (const id of Object.keys(ANIMALS)) {
       buildWalk("animal_" + id);
       buildLoop("animal_" + id + "_idle", 1.5); // 待機放慢，每格停久一點較從容
+      buildLoop("animal_" + id + "_yawn", 2.5);  // 打哈欠(約1.6秒跑一輪)
       buildEat("animal_" + id + "_eat");
       buildLoop("animal_" + id + "_sleep", 3);
     }
@@ -207,7 +209,10 @@ export class Renderer {
       let key = base;
       if (a.state === "eat" && this.hasImg(base + "_eat")) key = base + "_eat";
       else if (a.state === "sleep") key = this.hasImg(base + "_sleep") ? base + "_sleep" : (this.hasImg(base + "_idle") ? base + "_idle" : base); // 沒有睡覺圖時退回盤坐
-      else if (a.state === "idle" && this.hasImg(base + "_idle")) key = base + "_idle"; // 待機時一直播待機動畫(盤坐發呆)
+      else if (a.state === "idle") { // 待機：偶爾打哈欠(yawning)，其餘時間盤坐發呆
+        if (a.yawning && this.hasImg(base + "_yawn")) key = base + "_yawn";
+        else if (this.hasImg(base + "_idle")) key = base + "_idle";
+      }
       if (sp.texture.key !== key) sp.setTexture(key);
       // 進食/睡覺/待機是單方向圖(原圖朝左)；動物面向右時水平翻轉，左右都有
       sp.flipX = (key !== base && a.dir === "right");
