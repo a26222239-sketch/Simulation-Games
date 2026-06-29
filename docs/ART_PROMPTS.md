@@ -122,18 +122,22 @@ with the SAME DARK grey oval shadow (deep grey ~#555555, opaque) under the feet 
 
 **進食 prompt**（白底、自帶陰影、逐格描述；{{ }} 換成動物）
 ```
-A cute cartoon {{ANIMAL}} ({{APPEARANCE}}), ADULT proportions, side view facing LEFT, an EATING animation as ONE horizontal strip of 6 DISTINCT frames (left to right), each frame clearly different so it animates. In front of the animal lies FOOD on the floor ({{FOOD}}):
+A cute cartoon {{ANIMAL}} ({{APPEARANCE}}), ADULT proportions, side view facing LEFT, an EATING animation as ONE horizontal strip of 6 DISTINCT frames (left to right). FOOD on the floor in front: {{FOOD}}.
 Output EXACT pixel size: one horizontal strip, each cell EXACTLY {{CELL}}x{{CELL}} px, total {{STRIP}} px, solid plain white background.
-SIZE RULE: the animal is the EXACT SAME size as in the walk sheet (same standing body height, about 80% of cell height) — do NOT zoom in or enlarge it for eating.
-Frame 1: head up near the food, mouth closed.
-Frame 2: head lowered toward the food, mouth opening.
-Frame 3: biting the food, mouth on it, eyes closed.
-Frame 4: head up again chewing; the food is eaten — only the bare bone remains.
-FOOD RULE: in frames 1-3 the food (meat on a bone) is the EXACT SAME size, shape, color and position in all three frames — do NOT change it. In frame 4 only the bare bone is left, and that bone is the EXACT SAME size as the bone shown in frames 1-3.
-Keep the animal in the SAME spot; only the head/mouth change in frames 1-3, and the food becomes the bone only in frame 4. Everything else not mentioned (appearance, colors, pose) stays unchanged.
-Under the animal in EVERY frame, the SAME DARK grey oval shadow (deep grey ~#555555, opaque, soft edge) at the very bottom; it stands on the shadow.
-Style: flat colors, soft cel shading, thin dark outline, top-left light. Centered, feet and shadow at the bottom, same size/colors across frames.
-Solid plain white background. No ground texture, no text.
+SIZE RULE: the animal is the EXACT SAME size as in the walk sheet — do NOT zoom in.
+ANIMATION STRUCTURE (important): frames 1-5 are a SEAMLESS LOOPING chew cycle, frame 6 is the finished state.
+Frame 1: head lowered to the food, mouth just closing on it (chewing).
+Frame 2: jaw opening a little (chewing).
+Frame 3: jaw open wide, taking a bite (chewing).
+Frame 4: jaw closing again (chewing).
+Frame 5: mouth closed, head in the same lowered position — drawn so it flows SEAMLESSLY back into Frame 1 (a perfect loop).
+Frame 6: head lifted up; the food is finished — only the bare bone remains.
+LOOP RULE: in frames 1-5 the head stays DOWN at the food and ONLY the jaw/mouth moves (a small chewing cycle); frame 5 must connect smoothly to frame 1 so looping 1→2→3→4→5→1 is continuous (no jump).
+FOOD RULE: in frames 1-5 the food (meat on a bone) is the EXACT SAME size, shape, color and position — do NOT change it. In frame 6 only the bare bone remains, the EXACT SAME size as the bone in frames 1-5.
+Everything else not mentioned (appearance, colors, body pose) stays unchanged across all frames.
+Under the animal in EVERY frame, the SAME DARK grey oval shadow (deep grey ~#555555, opaque, soft edge) at the very bottom; fully inside the cell.
+SPACING RULE: leave generous empty padding around the animal, its shadow and the food; each frame fully inside its own cell with clear gaps; nothing touches or crosses the cell borders.
+Style: flat colors, soft cel shading, thin dark outline, top-left light. Solid plain white background, no ground texture, no text.
 ({{FOOD}} — lion/monkey: red meat on a bone; elephant/giraffe: hay or leaves; penguin: small fish.)
 ```
 
