@@ -10,15 +10,16 @@
 
 每次給使用者動物精靈圖 prompt，**一定要全部包含**，缺一不可：
 
+0. **每個動作一律 6 格**（走路＝6 欄×4 列＝24 格；吃/睡/待機/哈欠＝單排 6 格）。6 格動作要連貫、**6 格都不一樣**。
 1. **確切解析度（最常漏！）**：寫死「單格 cell px ＋ 整張 px」。例：
-   - 走路 4×4：`each cell EXACTLY {CELL}x{CELL} px, total {SHEET} px`
-   - 單排 1×4（吃/睡/待機）：`each cell EXACTLY {CELL}x{CELL} px, total {STRIP} px`
+   - 走路 6×4：`a 6x4 grid, each cell EXACTLY {CELL}x{CELL} px, total {SHEET} px`
+   - 單排 1×6（吃/睡/待機/哈欠）：`a horizontal strip of 6 frames, each cell EXACTLY {CELL}x{CELL} px, total {STRIP} px`
 2. **成年體型**：`ADULT ... proportions, NOT a cub/baby, NOT chibi`。
 3. **深色陰影畫進圖**：`the SAME DARK grey oval shadow (deep grey ~#555555, opaque, soft edge) under it in EVERY frame`。
 4. **大小一致**：`SIZE RULE: the animal is the EXACT SAME size as the walk sheet（走路為基準，body ~80% 格高）；吃/睡/待機不可放大/拉近`。
 5. **純白背景**：`solid plain white background, no ground, no text`。
 6. **單排動作一律側面朝左**（遊戲會自動翻右）：`side view facing LEFT`。
-7. **逐格描述 + 4 DISTINCT frames**（避免四格一樣）。
+7. **逐格描述 + 6 DISTINCT frames**（避免六格一樣）。
 8. 走路四列順序：`row1 front / row2 LEFT / row3 RIGHT / row4 back`。
 8b. **幀間距要大（根治「剪到鄰格」）**：每格之間留明顯空白，動物**連同陰影**完整在自己格子正中、
     四周留白，**不可碰到或越過格線、不可和鄰格重疊**。格與格之間要有清楚的空白間隙
@@ -37,14 +38,14 @@
    - 非洲獅基準：體色 golden-tan/golden-yellow、腹部/口鼻/腳掌淺奶油色、鬃毛與尾端 dark warm-brown、
      成年公獅滿鬃毛、圓潤口鼻、小圓耳、琥珀色眼睛。
 
-### 各動物畫素表（id：lion/elephant/penguin/monkey/giraffe）
-| 動物 | cell | 走路(4×4) | 單排(1×4) |
+### 各動物畫素表（6 格；id：lion/elephant/penguin/monkey/giraffe）
+| 動物 | cell | 走路(6欄×4列) | 單排(1×6) |
 |---|---|---|---|
-| lion 非洲獅 | 48 | 192×192 | 192×48 |
-| monkey | 42 | 168×168 | 168×42 |
-| penguin | 36 | 144×144 | 144×36 |
-| elephant | 72 | 288×288 | 288×72 |
-| giraffe | 72 | 288×288 | 288×72 |
+| lion 非洲獅 | 48 | 288×192 | 288×48 |
+| monkey | 42 | 252×168 | 252×42 |
+| penguin | 36 | 216×144 | 216×36 |
+| elephant | 72 | 432×288 | 432×72 |
+| giraffe | 72 | 432×288 | 432×72 |
 
 > 完整可複製的 prompt 範本見 `docs/ART_PROMPTS.md`（保持兩份同步）。
 > 使用者要 prompt 時，給**完整可直接貼上**的版本，不要叫他自己替換字串。

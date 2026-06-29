@@ -51,13 +51,13 @@
 
 不同動物天生大小不同，**單格(frame)像素**要照體型縮放（遊戲會依此載入並顯示）：
 
-| 動物 | 單格 frame | 走路整張(frame×4) | 進食/睡覺(frame×4 寬 × frame 高) |
+| 動物 | 單格 frame | 走路整張(6欄×4列) | 進食/睡覺(1×6：frame×6 寬 × frame 高) |
 |---|---|---|---|
-| 獅子 lion | 48 | 192×192 | 192×48 |
-| 猴子 monkey | 42 | 168×168 | 168×42 |
-| 企鵝 penguin | 36 | 144×144 | 144×36 |
-| 大象 elephant | 72 | 288×288 | 288×72 |
-| 長頸鹿 giraffe | 72 | 288×288 | 288×72 |
+| 獅子 lion | 48 | 288×192 | 288×48 |
+| 猴子 monkey | 42 | 252×168 | 252×42 |
+| 企鵝 penguin | 36 | 216×144 | 216×36 |
+| 大象 elephant | 72 | 432×288 | 432×72 |
+| 長頸鹿 giraffe | 72 | 432×288 | 432×72 |
 
 > 動物要**畫滿整格、腳＋陰影貼格子底部**；格子大小不同就是體型差異的來源。
 > 若 AI 不好控制像素，生大張(1024)再用 `cutout.py --resize` 縮到上表尺寸即可
@@ -73,10 +73,10 @@
 ### 通用 prompt 模板（把 {{ }} 換掉；{{CELL}}=單格px、{{SHEET}}=整張px，見上表）
 ```
 A cute cartoon {{ANIMAL}} character sprite sheet for a 2.5D isometric zoo game, ADULT proportions.
-Output EXACT pixel size: a 4x4 grid, each cell EXACTLY {{CELL}}x{{CELL}} px, total image EXACTLY {{SHEET}} px, solid plain white background.
+Output EXACT pixel size: a 6x4 grid, each cell EXACTLY {{CELL}}x{{CELL}} px, total image EXACTLY {{SHEET}} px, solid plain white background.
 Rows top-to-bottom = facing direction: row1 facing the camera (front), row2 facing LEFT,
 row3 facing RIGHT, row4 facing away (back).
-Columns left-to-right = a 4-frame walk cycle (legs alternating), looping smoothly, each frame DISTINCT.
+Columns left-to-right = a 6-frame walk cycle (legs alternating), looping smoothly, each frame DISTINCT.
 Style: flat colors with soft cel shading, thin dark outline, top-left light, bright and clean.
 SIZE RULE: the animal's standing body fills about 80% of the cell height, centered, feet aligned to the bottom of the cell;
 the SAME size in all 16 frames (do not zoom in/out between frames). This is the reference size — eat/sleep/idle sheets MUST use the exact same animal size.
@@ -97,7 +97,7 @@ Solid plain white background, no ground texture, no text, no frame borders.
 ### 若 4×4 網格生不好 → 改用「單排方向」prompt（生 4 次，每次一個方向）
 ```
 A cute cartoon {{ANIMAL}} ({{APPEARANCE}}), facing {{DIRECTION: front/left/right/back}},
-a horizontal strip of 4 walk-cycle frames, each 64x64 px (strip 256x64), solid plain white background,
+a horizontal strip of 6 walk-cycle frames, each 64x64 px (strip 256x64), solid plain white background,
 flat colors + soft cel shading, thin outline, centered, feet at bottom, consistent across frames,
 with the SAME DARK grey oval shadow (deep grey ~#555555, opaque) under the feet in every frame, no text.
 ```
@@ -110,18 +110,19 @@ with the SAME DARK grey oval shadow (deep grey ~#555555, opaque) under the feet 
 
 | 狀態 | 檔名 | 排版 | 尺寸(獅子) | 視角 |
 |---|---|---|---|---|
-| 走路 | `assets/animal_<id>.png` | 4列(前/左/右/後)×4格 | 192×192 | 各方向 |
-| 待機(可選) | `assets/animal_<id>_idle.png` | 1排×4格 | 192×48 | 側面即可 |
-| 進食 | `assets/animal_<id>_eat.png` | 1排×4格 | 192×48 | 側面即可 |
-| 睡覺 | `assets/animal_<id>_sleep.png` | 1排×4格 | 192×48 | 側面躺下 |
+| 走路 | `assets/animal_<id>.png` | 4列(前/左/右/後)×6格 | 288×192 | 各方向 |
+| 待機 | `assets/animal_<id>_idle.png` | 1排×6格 | 288×48 | 側面坐姿 |
+| 打哈欠 | `assets/animal_<id>_yawn.png` | 1排×6格 | 288×48 | 側面坐姿 |
+| 進食 | `assets/animal_<id>_eat.png` | 1排×6格 | 288×48 | 側面即可 |
+| 睡覺 | `assets/animal_<id>_sleep.png` | 1排×6格 | 288×48 | 側面躺下 |
 
 > 待機**可不畫**：沒給待機圖時，遊戲會用走路圖的站立格定格。想更生動再畫。
 
-> ⚠️ 重點：AI 常把「a strip of 4 frames」畫成四張一樣的。**一定要逐格寫清楚每格差異、並強調 4 DISTINCT frames**，動畫才有變化。
+> ⚠️ 重點：AI 常把「a strip of 6 frames」畫成四張一樣的。**一定要逐格寫清楚每格差異、並強調 6 DISTINCT frames**，動畫才有變化。
 
 **進食 prompt**（白底、自帶陰影、逐格描述；{{ }} 換成動物）
 ```
-A cute cartoon {{ANIMAL}} ({{APPEARANCE}}), ADULT proportions, side view facing LEFT, an EATING animation as ONE horizontal strip of 4 DISTINCT frames (left to right), each frame clearly different so it animates. In front of the animal lies FOOD on the floor ({{FOOD}}):
+A cute cartoon {{ANIMAL}} ({{APPEARANCE}}), ADULT proportions, side view facing LEFT, an EATING animation as ONE horizontal strip of 6 DISTINCT frames (left to right), each frame clearly different so it animates. In front of the animal lies FOOD on the floor ({{FOOD}}):
 Output EXACT pixel size: one horizontal strip, each cell EXACTLY {{CELL}}x{{CELL}} px, total {{STRIP}} px, solid plain white background.
 SIZE RULE: the animal is the EXACT SAME size as in the walk sheet (same standing body height, about 80% of cell height) — do NOT zoom in or enlarge it for eating.
 Frame 1: head up near the food, mouth closed.
@@ -138,7 +139,7 @@ Solid plain white background. No ground texture, no text.
 
 **睡覺 prompt**（白底、自帶陰影、逐格描述）
 ```
-A cute cartoon {{ANIMAL}} ({{APPEARANCE}}), ADULT proportions, side view facing LEFT, lying down asleep — a SLEEPING animation as ONE horizontal strip of 4 DISTINCT frames (left to right), each frame clearly different so it animates:
+A cute cartoon {{ANIMAL}} ({{APPEARANCE}}), ADULT proportions, side view facing LEFT, lying down asleep — a SLEEPING animation as ONE horizontal strip of 6 DISTINCT frames (left to right), each frame clearly different so it animates:
 Output EXACT pixel size: one horizontal strip, each cell EXACTLY {{CELL}}x{{CELL}} px, total {{STRIP}} px, solid plain white background.
 SIZE RULE: the animal is the EXACT SAME size as in the walk sheet (same body scale) — do NOT zoom in; a lying lion just occupies a lower, longer area but at the same scale.
 Frame 1: lying curled on its side, belly fully exhaled (lowest), eyes closed, a tiny "z" above the head.
@@ -153,7 +154,7 @@ Solid plain white background. No ground texture, no text other than the Zzz.
 
 **待機 prompt（打哈欠，白底、自帶陰影、逐格描述）**
 ```
-A cute cartoon {{ANIMAL}} ({{APPEARANCE}}), ADULT proportions, side view facing LEFT, standing still — an IDLE animation as ONE horizontal strip of 4 DISTINCT frames (left to right), each frame clearly different so it animates:
+A cute cartoon {{ANIMAL}} ({{APPEARANCE}}), ADULT proportions, side view facing LEFT, standing still — an IDLE animation as ONE horizontal strip of 6 DISTINCT frames (left to right), each frame clearly different so it animates:
 Output EXACT pixel size: one horizontal strip, each cell EXACTLY {{CELL}}x{{CELL}} px, total {{STRIP}} px, solid plain white background.
 SIZE RULE: the animal is the EXACT SAME size as in the walk sheet (same standing body height) — do NOT zoom in.
 Frame 1: standing relaxed, mouth closed, eyes open, neutral.
@@ -178,7 +179,7 @@ Solid plain white background. No ground texture, no text.
 ```
 A cute chibi human visitor sprite sheet for a 2.5D isometric zoo game.
 Layout: 4x4 grid, each cell 48x64 px, total 192x256 px, solid plain white background.
-Rows = facing front/left/right/back; columns = a 4-frame walk cycle.
+Rows = facing front/left/right/back; columns = a 6-frame walk cycle.
 A casual park visitor (t-shirt and shorts, simple shoes), cheerful, chibi proportions
 (big head, small body). Flat colors, soft cel shading, thin outline, top-left light.
 Centered, feet at bottom, identical size/colors across all frames.
@@ -256,7 +257,7 @@ Solid flat magenta (#FF00FF) background, no shadow, no text. Square image.
 2. **上傳上一步的圖**，逐方向產生走路 4 格（front / left / right / back 各跑一次）：
 ```
 Using THIS exact character — keep identical colors, shapes and proportions —
-draw a horizontal strip of 4 walk-cycle frames facing {{DIRECTION}}, evenly spaced,
+draw a horizontal strip of 6 walk-cycle frames facing {{DIRECTION}}, evenly spaced,
 same flat magenta (#FF00FF) background, same size, no shadow, no text.
 ```
 3. 去背（把洋紅扣掉）→ 縮放 → 拼成 256×256 的 4×4（見下方流程）。

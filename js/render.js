@@ -55,12 +55,14 @@ export class Renderer {
 
   makeAnims() {
     const s = this.scene;
-    // 走路：4 方向（每方向 4 格）
+    // 走路：4 方向，每方向格數自動偵測(支援 4 或 6 格)
     const buildWalk = (key) => {
       if (!this.animated(key)) return;
+      const cols = Math.round((s.textures.get(key).frameTotal - 1) / 4); // 每方向格數 = 總格數/4
+      const fps = Math.max(6, Math.round(cols * 1.7));                    // 格數多就加速，維持走路循環時間
       for (const dir in ROW) {
         const r = ROW[dir], name = key + "_" + dir;
-        if (!s.anims.exists(name)) s.anims.create({ key: name, frames: s.anims.generateFrameNumbers(key, { start: r * 4, end: r * 4 + 3 }), frameRate: 7, repeat: -1 });
+        if (!s.anims.exists(name)) s.anims.create({ key: name, frames: s.anims.generateFrameNumbers(key, { start: r * cols, end: r * cols + cols - 1 }), frameRate: fps, repeat: -1 });
       }
     };
     // 單排動畫（進食/睡覺）：用整張的所有格
@@ -68,13 +70,19 @@ export class Renderer {
       if (!this.animated(key)) return;
       if (!s.anims.exists(key)) s.anims.create({ key, frames: s.anims.generateFrameNumbers(key, {}), frameRate: fps, repeat: -1 });
     };
-    // 進食：放慢，咀嚼(2↔3)反覆多次後停在第4格(骨頭)，只播一次(不循環)
-    // 序列 0 +(1,2)x11 +3 = 24 格；frameRate 3 → 約 8 秒，之後停在骨頭(由 stateT 再停 ~2 秒)
+    // 進食：第0格起手 → 中間咀嚼格(1..n-2)來回擺動約8秒 → 停在最後一格(骨頭)，只播一次
+    // 自動支援 4 或 6 格：咀嚼格用所有中間格，末格為骨頭
     const buildEat = (key) => {
       if (!this.animated(key)) return;
-      const n = s.textures.get(key).frameTotal - 1; // 去掉 __BASE
+      const n = s.textures.get(key).frameTotal - 1; // 去掉 __BASE，總格數
       let seq;
-      if (n >= 4) { seq = [0]; for (let i = 0; i < 11; i++) seq.push(1, 2); seq.push(3); }
+      if (n >= 4) {
+        seq = [0];
+        const mid = []; for (let i = 1; i <= n - 2; i++) mid.push(i); // 咀嚼格
+        const wave = mid.concat([...mid].reverse());                 // 來回擺動
+        for (let i = 0; seq.length < 22; i++) seq.push(wave[i % wave.length]);
+        seq.push(n - 1); // 最後停在骨頭(末格)
+      }
       if (!s.anims.exists(key)) s.anims.create({
         key, frames: s.anims.generateFrameNumbers(key, seq ? { frames: seq } : {}),
         frameRate: 3, repeat: 0,
