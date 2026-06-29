@@ -31,6 +31,10 @@
      以**走路側面**為基準，動物的「站立身高(肩高/體高)」在四張圖完全一致。
      ＊**進食/睡覺/待機不要放大或拉近**動物——只換動作，體型大小不變。
   3. 動物本體**佔單格高度約 80%**，腳底（含陰影）貼齊格底、頂端留約 10% 邊距；四張圖佔比一致。
+- **幀間距（規則，根治剪到鄰格）**：每格之間留**明顯空白間距**，動物**連同陰影**完整置中於自己格內、四周留白，
+  **不可碰到或越過格線、不可與鄰格重疊**。`leave generous empty padding around each pose INCLUDING its shadow;
+  keep every frame fully inside its own cell with clear empty gaps between all frames; nothing touches or crosses cell borders.`
+- **Zzz（規則）**：睡覺的 z/Zz/Zzz 畫**大且粗體、清楚可讀**，第一格 z 也別太小（太小縮圖會糊/消失）。
 - **去背（規則）**：動物精靈圖一律用 `tools/cut_keep_shadow.py`（rembg 取乾淨剪影＋保留原圖非白的陰影/Zzz/食物，
   並去掉腿縫白塊）。**不要**用純 rembg（會連陰影吃掉），也不要只用 flood-fill（腿縫會殘白）。
 - **視角**：2.5D 等距風的「直立看板(billboard)」角色——角色站直、略為俯視 3/4 視角（約離地平線 30°）。

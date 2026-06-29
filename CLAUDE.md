@@ -20,6 +20,12 @@
 6. **單排動作一律側面朝左**（遊戲會自動翻右）：`side view facing LEFT`。
 7. **逐格描述 + 4 DISTINCT frames**（避免四格一樣）。
 8. 走路四列順序：`row1 front / row2 LEFT / row3 RIGHT / row4 back`。
+8b. **幀間距要大（根治「剪到鄰格」）**：每格之間留明顯空白，動物**連同陰影**完整在自己格子正中、
+    四周留白，**不可碰到或越過格線、不可和鄰格重疊**。格與格之間要有清楚的空白間隙
+    （這樣去背切圖才能切在空白處，不會把隔壁的腳/陰影切進來）。
+    prompt 寫：`leave generous empty padding around each pose INCLUDING its shadow; keep every frame fully inside its own cell with clear empty gaps between all frames; nothing touches or crosses the cell borders.`
+8c. **Zzz 要大要粗**：睡覺的 z / Zz / Zzz 畫**大且粗體、清楚可讀**，第一格的 z 也不要太小
+    （太小縮圖後會糊掉/消失）。
 9. **同一隻動物一致（重要）**：四張動作圖必須是**同一隻動物在做不同動作**，不只是顏色，
    連**畫風、體型/比例、鬃毛(毛髮)形狀與份量、五官、毛色/膚色**都要完全相同；只有姿勢/動作改變。
    ★ 分兩種寫法：
