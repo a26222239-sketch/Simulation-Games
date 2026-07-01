@@ -9,7 +9,7 @@ import { TILE_W, TILE_H, GROUND, STRUCTURES, ANIMALS } from "./config.js";
 import { gridToScreen } from "./iso.js";
 
 const HW = TILE_W / 2, HH = TILE_H / 2;
-const ASSET_VER = 31; // 換 assets 圖後 +1，自動破壞快取載新圖
+const ASSET_VER = 32; // 換 assets 圖後 +1，自動破壞快取載新圖
 const toInt = (h) => parseInt(h.slice(1), 16);
 const ROW = { down: 0, left: 1, right: 2, up: 3 }; // 精靈圖方向列順序：前/左/右/後
 
