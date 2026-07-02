@@ -52,6 +52,26 @@ def clean_edge_debris(cell, N):
     return cell
 
 
+def runs(mask):
+    out = []; s0 = None
+    for i, v in enumerate(mask):
+        if v and s0 is None: s0 = i
+        elif not v and s0 is not None: out.append((s0, i)); s0 = None
+    if s0 is not None: out.append((s0, len(mask)))
+    return out
+
+
+def centroid_x(arr):
+    """主體(最大連通塊)的質心x — 受抬腳/伸頭影響小，逐格水平對齊不抖"""
+    m = arr[:, :, 3] > 20
+    if not m.any(): return None
+    lbl, n = ndimage.label(m)
+    sizes = ndimage.sum(np.ones_like(lbl), lbl, index=range(1, n + 1))
+    k = int(np.argmax(sizes)) + 1
+    _, xs = np.where(lbl == k)
+    return float(xs.mean())
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("src"); ap.add_argument("dst")
@@ -64,52 +84,55 @@ def main():
     R, C = (int(v) for v in a.grid.lower().split("x"))
     N = a.cell
     im = Image.open(a.src).convert("RGBA")
-    W, H = im.size
-    cw, ch = W / C, H / R
+    arrall = np.array(im); H, W = arrall.shape[:2]
+    alpha = arrall[:, :, 3] > 20
 
-    # 1) 均分切格 + 整格縮放（保留格內相對位置）
-    scaled = []   # [R][C] -> np arr (縮放後整格)
-    boxes = []    # [R][C] -> 主體 bbox(縮放後座標) or None
-    # 先決定 scale
+    # 列：內容帶偵測(找空白間隙切，頭不會被均分切掉)；數量不符退回均分
+    rb = runs(alpha.any(axis=1))
+    if len(rb) != R:
+        step = H / R; rb = [(round(i * step), round((i + 1) * step)) for i in range(R)]
+    # 欄：一律均分(來源為均勻網格)
+    cw = W / C
+
+    # 縮放
+    cells_src = []  # [R][C] PIL cell (整帶高)
+    for (y0, y1) in rb:
+        row = [im.crop((round(c * cw), y0, round((c + 1) * cw), y1)) for c in range(C)]
+        cells_src.append(row)
     if a.scale > 0:
         s = a.scale
     else:
         dims = []
-        for r in range(R):
-            for c in range(C):
-                cell = np.array(im.crop((round(c * cw), round(r * ch), round((c + 1) * cw), round((r + 1) * ch))))
-                bb = main_bbox(cell)
+        for row in cells_src:
+            for cell in row:
+                bb = main_bbox(np.array(cell))
                 if bb: dims.append(max(bb[2] - bb[0], bb[3] - bb[1]))
-        if not dims:
-            raise SystemExit("找不到內容")
+        if not dims: raise SystemExit("找不到內容")
         s = N * (1 - a.pad) / float(np.median(dims))
-    for r in range(R):
-        rowS, rowB = [], []
-        for c in range(C):
-            cell = im.crop((round(c * cw), round(r * ch), round((c + 1) * cw), round((r + 1) * ch)))
-            nw, nh = max(1, round(cell.width * s)), max(1, round(cell.height * s))
-            cs = cell.resize((nw, nh), Image.LANCZOS)
-            arr = np.array(cs)
-            rowS.append(arr); rowB.append(main_bbox(arr))
-        scaled.append(rowS); boxes.append(rowB)
 
-    # 2) 每列一個位移：主體中心x/底部y 取中位數 → 對齊格中心/格底
+    scaled, boxes, cents = [], [], []
+    for row in cells_src:
+        rs, rbx, rc = [], [], []
+        for cell in row:
+            nw, nh = max(1, round(cell.width * s)), max(1, round(cell.height * s))
+            arr = np.array(cell.resize((nw, nh), Image.LANCZOS))
+            rs.append(arr); rbx.append(main_bbox(arr)); rc.append(centroid_x(arr))
+        scaled.append(rs); boxes.append(rbx); cents.append(rc)
+
     out = Image.new("RGBA", (C * N, R * N), (0, 0, 0, 0))
     for r in range(R):
-        cxs = [ (b[0] + b[2]) / 2 for b in boxes[r] if b ]
-        bts = [ b[3] for b in boxes[r] if b ]
-        if not cxs: continue
-        dx = round(N / 2 - float(np.median(cxs)))
-        dy = round((N - a.margin) - float(np.median(bts)))
-        # 整列微移保護：讓該列「所有格的主體」都留 ≥1px 邊(仍同列同位移，不會抖)
-        l = min(b[0] for b in boxes[r] if b); rt = max(b[2] for b in boxes[r] if b)
+        bts = [b[3] for b in boxes[r] if b]
+        if not bts: continue
+        dy = round((N - a.margin) - float(np.median(bts)))          # Y: 同列同位移(腳穩)
         t = min(b[1] for b in boxes[r] if b); bt = max(b[3] for b in boxes[r] if b)
-        dx = max(dx, 1 - l); dx = min(dx, (N - 1) - rt)
         dy = max(dy, 1 - t); dy = min(dy, (N - 1) - bt)
         for c in range(C):
-            arr = scaled[r][c]
+            arr = scaled[r][c]; b = boxes[r][c]
+            if b is None: continue
+            cx = cents[r][c] if cents[r][c] is not None else (b[0] + b[2]) / 2
+            dx = round(N / 2 - cx)                                  # X: 逐格質心置中(不搖晃)
+            dx = max(dx, 1 - b[0]); dx = min(dx, (N - 1) - b[2])    # 留邊保護
             h, w = arr.shape[:2]
-            # 貼進 N×N 目標格（同列同位移）
             cellout = np.zeros((N, N, 4), np.uint8)
             sx0, sy0 = max(0, -dx), max(0, -dy)
             tx0, ty0 = max(0, dx), max(0, dy)
@@ -119,8 +142,7 @@ def main():
             cellout = clean_edge_debris(cellout, N)
             out.paste(Image.fromarray(cellout, "RGBA"), (c * N, r * N))
     out.save(a.dst)
-    print(f"✓ normalize_stable {a.src} -> {a.dst}  grid {R}x{C} cell {N}  scale={s:.4f} (每列同一變換)")
-
+    print(f"✓ normalize_stable {a.src} -> {a.dst}  grid {R}x{C} cell {N}  scale={s:.4f} (X質心/Y同列)")
 
 if __name__ == "__main__":
     main()
