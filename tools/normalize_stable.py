@@ -80,6 +80,7 @@ def main():
     ap.add_argument("--scale", type=float, default=0)
     ap.add_argument("--pad", type=float, default=0.10)
     ap.add_argument("--margin", type=int, default=1)
+    ap.add_argument("--nearest", action="store_true", help="像素圖用最近鄰縮放(不糊)；開羅模式一律加這個")
     a = ap.parse_args()
     R, C = (int(v) for v in a.grid.lower().split("x"))
     N = a.cell
@@ -115,7 +116,7 @@ def main():
         rs, rbx, rc = [], [], []
         for cell in row:
             nw, nh = max(1, round(cell.width * s)), max(1, round(cell.height * s))
-            arr = np.array(cell.resize((nw, nh), Image.LANCZOS))
+            arr = np.array(cell.resize((nw, nh), Image.NEAREST if a.nearest else Image.LANCZOS))
             rs.append(arr); rbx.append(main_bbox(arr)); rc.append(centroid_x(arr))
         scaled.append(rs); boxes.append(rbx); cents.append(rc)
 

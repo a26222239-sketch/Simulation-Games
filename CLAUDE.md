@@ -40,7 +40,7 @@
 
 ### 去背/接圖流程（像素圖超簡單）
 1. `python3 tools/cutout.py 原圖.png out.png --bg FFFFFF`（flood-fill 對像素圖完美，不需 rembg）
-2. `python3 tools/normalize_stable.py out.png assets/animal_<id>.png --grid 1x9 --cell N --margin 2`
+2. `python3 tools/normalize_stable.py out.png assets/animal_<id>.png --grid 1x9 --cell N --margin 2 --nearest`（像素圖必加 --nearest，用最近鄰縮放才不糊）
 3. **換圖必把 `js/render.js` 的 `ASSET_VER` +1**（破壞快取）。
 
 ---
