@@ -68,8 +68,11 @@
 1. 去背：`python3 tools/cut_keep_shadow.py 原圖 out.png --grid 4x4`（單排 `--grid 1x4`）
    ＝ rembg 取乾淨剪影 ＋ 保留原圖非白的陰影/Zzz/食物 ＋ 去掉腿縫白。
    **不要**用純 rembg（吃掉陰影）或純 flood-fill（腿縫殘白）。
-2. 切格對齊：`python3 tools/normalize.py out.png assets/animal_<id>.png --grid RxC --cell N`
-   - 同一隻動物四張用**相同縮放**對齊（`--scale` 固定值或同 `--pad`），確保大小一致。
+2. 切格對齊（**一律用穩定版**）：`python3 tools/normalize_stable.py out.png assets/animal_<id>.png --grid RxC --cell N --scale S --margin 2`
+   - **同列同一變換**（一個縮放+一個位移），絕不逐格重新置中 → 播放不飄移、不閃爍。
+   - 跨動作大小：以**鬃毛/頭部寬度**為錨對齊各張的 `--scale`（走路定基準，其他張讓鬃毛寬一致）。
+   - 每格四周必留 ≥1px 空白（工具會整列微移保護），避免 GPU 取樣吃到鄰格。
+   - 舊 normalize.py 已棄用（逐格置中會造成飄移）。
 3. `config.js` 該動物設 `bakedShadow: true`（陰影已畫進圖 → render.js 不再畫程式影子）。
    沒有自帶陰影的動物維持預設（程式畫影子）以免懸空。
 4. **換了 assets 圖一定要把 `js/render.js` 的 `ASSET_VER` +1**（破壞快取，否則玩家看到舊圖）。
