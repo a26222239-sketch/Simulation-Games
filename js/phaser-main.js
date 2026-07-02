@@ -94,6 +94,7 @@ class MainScene extends Phaser.Scene {
 
 new Phaser.Game({
   type: Phaser.AUTO,
+  pixelArt: true, roundPixels: true, // 開羅式像素風：關閉平滑取樣，像素銳利、不吃鄰格
   scale: { mode: Phaser.Scale.RESIZE, width: "100%", height: "100%" },
   backgroundColor: "#bfe3f0",
   scene: MainScene,

@@ -23,7 +23,8 @@ export class Renderer {
     scene.load.on("loaderror", () => {}); // 沒有對應圖檔就略過，改用佔位貼圖
     for (const id of Object.keys(ANIMALS)) {
       const fr = ANIMALS[id].frame || 64; // 單格像素依動物體型(獅子64基準)
-      scene.load.spritesheet("animal_" + id, `assets/animal_${id}.png${v}`, { frameWidth: fr, frameHeight: fr });        // 走路(4方向×4格)
+      scene.load.spritesheet("animal_" + id, `assets/animal_${id}.png${v}`, { frameWidth: fr, frameHeight: fr });        // 走路(4方向×N格) 或 開羅模式1×9條
+      if (ANIMALS[id].kairo) continue; // 開羅模式：一張條包含全部姿勢，不載其他表
       scene.load.spritesheet("animal_" + id + "_idle", `assets/animal_${id}_idle.png${v}`, { frameWidth: fr, frameHeight: fr });   // 待機(單排，可選)
       scene.load.spritesheet("animal_" + id + "_eat", `assets/animal_${id}_eat.png${v}`, { frameWidth: fr, frameHeight: fr });   // 進食(單排)
       scene.load.spritesheet("animal_" + id + "_sleep", `assets/animal_${id}_sleep.png${v}`, { frameWidth: fr, frameHeight: fr }); // 睡覺(單排)
@@ -44,6 +45,8 @@ export class Renderer {
     this.structSprites = new Map(); // structId -> GameObject
     this.animalSprites = new Map(); // animal obj -> sprite
     this.visitorSprites = new Map();// visitor obj -> sprite
+    this.fxZzz = new Map();         // animal -> Text (睡覺 Zzz，引擎疊加)
+    this.fxFood = new Map();        // animal -> Image (進食 肉/骨，引擎疊加)
 
     this.genTextures();
     this.makeAnims();
@@ -87,7 +90,14 @@ export class Renderer {
         frameRate: 3, repeat: 0,
       });
     };
+    // 開羅模式：1×9 條 = 前走2 側走2 背走2 坐1 睡1 吃1；動態靠程式(翻轉/彈跳/Zzz/食物)
+    const buildKairo = (key) => {
+      if (!this.animated(key)) return;
+      const mk = (name, f) => { if (!s.anims.exists(name)) s.anims.create({ key: name, frames: s.anims.generateFrameNumbers(key, { frames: f }), frameRate: 4, repeat: -1 }); };
+      mk(key + "_down", [0, 1]); mk(key + "_left", [2, 3]); mk(key + "_right", [2, 3]); mk(key + "_up", [4, 5]);
+    };
     for (const id of Object.keys(ANIMALS)) {
+      if (ANIMALS[id].kairo) { buildKairo("animal_" + id); continue; }
       buildWalk("animal_" + id);
       buildLoop("animal_" + id + "_idle", 1.5); // 待機放慢，每格停久一點較從容
       buildLoop("animal_" + id + "_yawn", 2.5);  // 打哈欠(約1.6秒跑一輪)
@@ -105,6 +115,9 @@ export class Renderer {
     if (!this.hasImg("cafe")) this.genBuilding("cafe");
     if (!this.hasImg("souvenir")) this.genBuilding("souvenir");
     if (!this.hasImg("tree")) this.genTree();
+    // 進食特效(引擎疊加)：小肉塊/骨頭
+    if (!this.hasImg("fx_meat")) { const g = this.gfx(); g.fillStyle(0xffffff,1); g.fillCircle(2,4,2); g.fillCircle(14,4,2); g.fillStyle(0xc22e2e,1); g.fillRoundedRect(3,1,10,7,3); g.generateTexture("fx_meat",16,9); g.destroy(); }
+    if (!this.hasImg("fx_bone")) { const g = this.gfx(); g.fillStyle(0xf5f0e6,1); g.fillCircle(2,2,2); g.fillCircle(2,6,2); g.fillCircle(14,2,2); g.fillCircle(14,6,2); g.fillRect(2,3,12,3); g.generateTexture("fx_bone",16,9); g.destroy(); }
   }
   gfx() { return this.scene.make.graphics({ add: false }); }
 
@@ -221,23 +234,52 @@ export class Renderer {
         else if (this.hasImg(base + "_idle")) key = base + "_idle";
       }
       if (sp.texture.key !== key) sp.setTexture(key);
-      // 進食/睡覺/待機是單方向圖(原圖朝左)；動物面向右時水平翻轉，左右都有
-      sp.flipX = (key !== base && a.dir === "right");
+      const def = ANIMALS[st.species], fr = def.frame || 48, isK = !!def.kairo;
+      // 進食/睡覺/待機是單方向圖(原圖朝左)；面向右時水平翻轉。開羅模式全部靠翻轉
+      sp.flipX = isK ? (a.dir === "right") : (key !== base && a.dir === "right");
       const p = gridToScreen(a.fx, a.fy);
-      const bob = (!this.animated(base) && a.moving) ? Math.abs(Math.sin(a.frame * 1.6)) * 2 : 0;
+      const bob = ((isK || !this.animated(base)) && a.moving) ? Math.abs(Math.sin(a.frame * 1.6)) * 2 : 0;
       sp.setPosition(p.x, p.y - bob).setDepth(a.fx + a.fy);
-      // 陰影規則：有「自帶陰影」精靈圖的動物(bakedShadow)不畫程式影子；其餘暫用程式影子直到有自帶陰影的圖
-      if (!ANIMALS[st.species].bakedShadow) { const fr = ANIMALS[st.species].frame || 48; this.shadow(p.x, p.y, fr * 0.6, fr * 0.22); }
-      if (key === base) { // 走路/待機（走路精靈圖）
-        if (this.animated(base)) { if (a.state === "walk" && a.moving) sp.play(base + "_" + a.dir, true); else { sp.anims.stop(); sp.setFrame(ROW[a.dir] * 4); } }
+      // 陰影：自帶陰影(bakedShadow)不畫；開羅模式與佔位圖由程式畫
+      if (!def.bakedShadow) this.shadow(p.x, p.y, fr * 0.6, fr * 0.22);
+      if (isK && this.animated(base)) {
+        // 開羅模式：走路播 2 格交替；坐6/睡7/吃8 靜態格
+        if (a.state === "walk" && a.moving) sp.play(base + "_" + a.dir, true);
+        else {
+          sp.anims.stop();
+          sp.setFrame(a.state === "sleep" ? 7 : a.state === "eat" ? 8 : 6);
+        }
+      } else if (key === base) { // 走路/待機（走路精靈圖）
+        if (this.animated(base)) {
+          const cols = Math.round((this.scene.textures.get(base).frameTotal - 1) / 4);
+          if (a.state === "walk" && a.moving) sp.play(base + "_" + a.dir, true); else { sp.anims.stop(); sp.setFrame(ROW[a.dir] * cols); }
+        }
       } else { // 進食/睡覺/打哈欠（單排動畫）
         if (this.animated(key)) {
           if (key === base + "_eat") { if (!a.eatStarted) { sp.play(key); a.eatStarted = true; } } // 只播一次，停在骨頭
           else sp.play(key, true); // 睡覺/哈欠循環
         } else sp.anims.stop();
       }
+      // ---- 引擎疊加特效(開羅式)：沒有對應圖或開羅模式時使用 ----
+      const wantZzz = a.state === "sleep" && (isK || !this.hasImg(base + "_sleep"));
+      if (wantZzz) {
+        let t = this.fxZzz.get(a);
+        if (!t) { t = scene.add.text(0, 0, "z", { fontFamily: "monospace", fontStyle: "bold", fontSize: Math.max(10, fr * 0.3) + "px", color: "#3a3a4a" }).setOrigin(0.5, 1); this.fxZzz.set(a, t); }
+        t.setText(["z", "zz", "zzz"][Math.floor(a.animTime * 1.1) % 3]);
+        t.setPosition(p.x + fr * 0.18, p.y - fr * 0.6 - (a.animTime % 1.4) * 3).setDepth(a.fx + a.fy + 0.001).setAlpha(1);
+      } else { const t = this.fxZzz.get(a); if (t) { t.destroy(); this.fxZzz.delete(a); } }
+      const wantFood = a.state === "eat" && (isK || !this.hasImg(base + "_eat"));
+      if (wantFood) {
+        let f = this.fxFood.get(a);
+        if (!f) { f = scene.add.image(0, 0, "fx_meat").setOrigin(0.5, 1); this.fxFood.set(a, f); }
+        f.setTexture(a.stateT <= 2 ? "fx_bone" : "fx_meat"); // 最後2秒剩骨頭
+        const off = a.dir === "left" ? -fr * 0.34 : a.dir === "right" ? fr * 0.34 : 0;
+        f.setPosition(p.x + off, p.y + 2).setDepth(a.fx + a.fy - 0.001);
+      } else { const f = this.fxFood.get(a); if (f) { f.destroy(); this.fxFood.delete(a); } }
     }
     for (const [a, sp] of this.animalSprites) if (!seenA.has(a)) { sp.destroy(); this.animalSprites.delete(a); }
+    for (const [a, t] of this.fxZzz) if (!seenA.has(a)) { t.destroy(); this.fxZzz.delete(a); }
+    for (const [a, f] of this.fxFood) if (!seenA.has(a)) { f.destroy(); this.fxFood.delete(a); }
 
     // 遊客
     const seenV = new Set();
