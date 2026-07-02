@@ -36,14 +36,14 @@ export const STRUCTURES = {
 // ★ frame = 單格像素，「以獅子 48 為基準，依體型調整」：
 //   走路整張 = frame×4 寬 × frame×4 高；進食/睡覺 = frame×4 寬 × frame 高。
 //   遊戲會依各動物的 frame 載入並顯示，所以大象天生比企鵝大。
-//   精靈圖用 tools/cut_keep_shadow.py 去背並「保留圖檔自帶的陰影」；
-//   設 bakedShadow:true 的動物，render.js 不再畫程式影子（見 ART_PROMPTS 規則）。
+//   ★ 開羅模式(kairo:true)：每隻動物一張 1×9 像素條(前走2|側走2|背走2|坐|睡|吃)，
+//   陰影/Zzz/食物/右向 全由程式處理（見 CLAUDE.md 開羅模式）。
 export const ANIMALS = {
-  lion:     { name: "非洲獅", body: "#d9a441", accent: "#a87a2a", buy: 200, popularity: 6, speed: 0.7, size: 1.1, frame: 48, bakedShadow: true },
-  elephant: { name: "大象", body: "#9aa0a6", accent: "#787e84", buy: 350, popularity: 8, speed: 0.5, size: 1.4, frame: 72 },
-  penguin:  { name: "企鵝", body: "#2b2f36", accent: "#f1f1f1", buy: 150, popularity: 5, speed: 0.9, size: 0.8, frame: 36 },
-  monkey:   { name: "猴子", body: "#8a5a3b", accent: "#caa46a", buy: 180, popularity: 5, speed: 1.1, size: 0.8, frame: 42 },
-  giraffe:  { name: "長頸鹿", body: "#e8c14a", accent: "#b5894a", buy: 320, popularity: 7, speed: 0.6, size: 1.5, frame: 72 },
+  lion:     { name: "非洲獅", body: "#d9a441", accent: "#a87a2a", buy: 200, popularity: 6, speed: 0.7, size: 1.1, frame: 48, kairo: true },
+  elephant: { name: "大象", body: "#9aa0a6", accent: "#787e84", buy: 350, popularity: 8, speed: 0.5, size: 1.4, frame: 72, kairo: true },
+  penguin:  { name: "企鵝", body: "#2b2f36", accent: "#f1f1f1", buy: 150, popularity: 5, speed: 0.9, size: 0.8, frame: 36, kairo: true },
+  monkey:   { name: "猴子", body: "#8a5a3b", accent: "#caa46a", buy: 180, popularity: 5, speed: 1.1, size: 0.8, frame: 42, kairo: true },
+  giraffe:  { name: "長頸鹿", body: "#e8c14a", accent: "#b5894a", buy: 320, popularity: 7, speed: 0.6, size: 1.5, frame: 72, kairo: true },
 };
 
 // ---- 遊客 ----

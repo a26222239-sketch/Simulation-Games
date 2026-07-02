@@ -9,7 +9,7 @@ import { TILE_W, TILE_H, GROUND, STRUCTURES, ANIMALS } from "./config.js";
 import { gridToScreen } from "./iso.js";
 
 const HW = TILE_W / 2, HH = TILE_H / 2;
-const ASSET_VER = 38; // 換 assets 圖後 +1，自動破壞快取載新圖
+const ASSET_VER = 39; // 換 assets 圖後 +1，自動破壞快取載新圖
 const toInt = (h) => parseInt(h.slice(1), 16);
 const ROW = { down: 0, left: 1, right: 2, up: 3 }; // 精靈圖方向列順序：前/左/右/後
 
@@ -21,16 +21,13 @@ export class Renderer {
   static preload(scene) {
     const v = "?v=" + ASSET_VER;
     scene.load.on("loaderror", () => {}); // 沒有對應圖檔就略過，改用佔位貼圖
+    // 開羅模式：每隻動物一張 1×9 條(前走2|側走2(朝左)|背走2|坐|睡|吃)
     for (const id of Object.keys(ANIMALS)) {
-      const fr = ANIMALS[id].frame || 64; // 單格像素依動物體型(獅子64基準)
-      scene.load.spritesheet("animal_" + id, `assets/animal_${id}.png${v}`, { frameWidth: fr, frameHeight: fr });        // 走路(4方向×N格) 或 開羅模式1×9條
-      if (ANIMALS[id].kairo) continue; // 開羅模式：一張條包含全部姿勢，不載其他表
-      scene.load.spritesheet("animal_" + id + "_idle", `assets/animal_${id}_idle.png${v}`, { frameWidth: fr, frameHeight: fr });   // 待機(單排，可選)
-      scene.load.spritesheet("animal_" + id + "_eat", `assets/animal_${id}_eat.png${v}`, { frameWidth: fr, frameHeight: fr });   // 進食(單排)
-      scene.load.spritesheet("animal_" + id + "_sleep", `assets/animal_${id}_sleep.png${v}`, { frameWidth: fr, frameHeight: fr }); // 睡覺(單排)
-      scene.load.spritesheet("animal_" + id + "_yawn", `assets/animal_${id}_yawn.png${v}`, { frameWidth: fr, frameHeight: fr });   // 待機-打哈欠(單排，可選)
+      const fr = ANIMALS[id].frame || 48;
+      scene.load.spritesheet("animal_" + id, `assets/animal_${id}.png${v}`, { frameWidth: fr, frameHeight: fr });
     }
-    scene.load.spritesheet("visitor", `assets/visitor.png${v}`, { frameWidth: 48, frameHeight: 64 });
+    // 遊客：1×6 條(前走2|側走2(朝左)|背走2)，單格 24×32
+    scene.load.spritesheet("visitor", `assets/visitor.png${v}`, { frameWidth: 24, frameHeight: 32 });
     scene.load.image("cafe", `assets/cafe.png${v}`);
     scene.load.image("souvenir", `assets/souvenir.png${v}`);
     scene.load.image("tree", `assets/tree.png${v}`);
@@ -58,53 +55,14 @@ export class Renderer {
 
   makeAnims() {
     const s = this.scene;
-    // 走路：4 方向，每方向格數自動偵測(支援 4 或 6 格)
-    const buildWalk = (key) => {
-      if (!this.animated(key)) return;
-      const cols = Math.round((s.textures.get(key).frameTotal - 1) / 4); // 每方向格數 = 總格數/4
-      const fps = Math.max(6, Math.round(cols * 1.7));                    // 格數多就加速，維持走路循環時間
-      for (const dir in ROW) {
-        const r = ROW[dir], name = key + "_" + dir;
-        if (!s.anims.exists(name)) s.anims.create({ key: name, frames: s.anims.generateFrameNumbers(key, { start: r * cols, end: r * cols + cols - 1 }), frameRate: fps, repeat: -1 });
-      }
-    };
-    // 單排動畫（進食/睡覺）：用整張的所有格
-    const buildLoop = (key, fps) => {
-      if (!this.animated(key)) return;
-      if (!s.anims.exists(key)) s.anims.create({ key, frames: s.anims.generateFrameNumbers(key, {}), frameRate: fps, repeat: -1 });
-    };
-    // 進食：前 n-1 格＝「可無縫循環的咀嚼」，順向循環約8秒 → 停在最後一格(骨頭)，只播一次
-    // 美術把咀嚼畫成首尾相接，所以單純順向循環就會連續；自動支援 4 或 6 格
-    const buildEat = (key) => {
-      if (!this.animated(key)) return;
-      const n = s.textures.get(key).frameTotal - 1; // 去掉 __BASE，總格數
-      let seq;
-      if (n >= 3) {
-        seq = [];
-        const chew = []; for (let i = 0; i <= n - 2; i++) chew.push(i);  // 0..n-2 = 咀嚼循環
-        for (let i = 0; seq.length < 24; i++) seq.push(chew[i % chew.length]); // 約8秒(3fps)
-        seq.push(n - 1); // 最後停在骨頭(末格)
-      }
-      if (!s.anims.exists(key)) s.anims.create({
-        key, frames: s.anims.generateFrameNumbers(key, seq ? { frames: seq } : {}),
-        frameRate: 3, repeat: 0,
-      });
-    };
-    // 開羅模式：1×9 條 = 前走2 側走2 背走2 坐1 睡1 吃1；動態靠程式(翻轉/彈跳/Zzz/食物)
+    // 開羅條：前走[0,1] 側走[2,3](朝左,右=翻轉) 背走[4,5]；坐6 睡7 吃8
     const buildKairo = (key) => {
       if (!this.animated(key)) return;
       const mk = (name, f) => { if (!s.anims.exists(name)) s.anims.create({ key: name, frames: s.anims.generateFrameNumbers(key, { frames: f }), frameRate: 4, repeat: -1 }); };
       mk(key + "_down", [0, 1]); mk(key + "_left", [2, 3]); mk(key + "_right", [2, 3]); mk(key + "_up", [4, 5]);
     };
-    for (const id of Object.keys(ANIMALS)) {
-      if (ANIMALS[id].kairo) { buildKairo("animal_" + id); continue; }
-      buildWalk("animal_" + id);
-      buildLoop("animal_" + id + "_idle", 1.5); // 待機放慢，每格停久一點較從容
-      buildLoop("animal_" + id + "_yawn", 2.5);  // 打哈欠(約1.6秒跑一輪)
-      buildEat("animal_" + id + "_eat");
-      buildLoop("animal_" + id + "_sleep", 3);
-    }
-    buildWalk("visitor");
+    for (const id of Object.keys(ANIMALS)) buildKairo("animal_" + id);
+    buildKairo("visitor"); // 遊客同款 1×6(走路部分)
   }
 
   // 生成佔位貼圖（沒有玩家圖時使用）
@@ -225,51 +183,24 @@ export class Renderer {
       const base = "animal_" + st.species;
       let sp = this.animalSprites.get(a);
       if (!sp) { sp = scene.add.sprite(0, 0, base).setOrigin(0.5, 1); this.animalSprites.set(a, sp); }
-      // 依狀態挑貼圖（沒有對應圖就退回走路/待機站立）
-      let key = base;
-      if (a.state === "eat" && this.hasImg(base + "_eat")) key = base + "_eat";
-      else if (a.state === "sleep") key = this.hasImg(base + "_sleep") ? base + "_sleep" : (this.hasImg(base + "_idle") ? base + "_idle" : base); // 沒有睡覺圖時退回盤坐
-      else if (a.state === "idle") { // 待機：偶爾打哈欠(yawning)，其餘時間盤坐發呆
-        if (a.yawning && this.hasImg(base + "_yawn")) key = base + "_yawn";
-        else if (this.hasImg(base + "_idle")) key = base + "_idle";
-      }
-      if (sp.texture.key !== key) sp.setTexture(key);
-      const def = ANIMALS[st.species], fr = def.frame || 48, isK = !!def.kairo;
-      // 進食/睡覺/待機是單方向圖(原圖朝左)；面向右時水平翻轉。開羅模式全部靠翻轉
-      sp.flipX = isK ? (a.dir === "right") : (key !== base && a.dir === "right");
+      const def = ANIMALS[st.species], fr = def.frame || 48;
+      sp.flipX = (a.dir === "right"); // 只畫朝左，右向翻轉
       const p = gridToScreen(a.fx, a.fy);
-      const bob = ((isK || !this.animated(base)) && a.moving) ? Math.abs(Math.sin(a.frame * 1.6)) * 2 : 0;
+      const bob = (a.moving) ? Math.abs(Math.sin(a.frame * 1.6)) * 2 : 0;
       sp.setPosition(p.x, p.y - bob).setDepth(a.fx + a.fy);
-      // 陰影：自帶陰影(bakedShadow)不畫；開羅模式與佔位圖由程式畫
-      if (!def.bakedShadow) this.shadow(p.x, p.y, fr * 0.6, fr * 0.22);
-      if (isK && this.animated(base)) {
-        // 開羅模式：走路播 2 格交替；坐6/睡7/吃8 靜態格
+      this.shadow(p.x, p.y, fr * 0.55, fr * 0.2); // 陰影一律程式畫
+      if (this.animated(base)) {
         if (a.state === "walk" && a.moving) sp.play(base + "_" + a.dir, true);
-        else {
-          sp.anims.stop();
-          sp.setFrame(a.state === "sleep" ? 7 : a.state === "eat" ? 8 : 6);
-        }
-      } else if (key === base) { // 走路/待機（走路精靈圖）
-        if (this.animated(base)) {
-          const cols = Math.round((this.scene.textures.get(base).frameTotal - 1) / 4);
-          if (a.state === "walk" && a.moving) sp.play(base + "_" + a.dir, true); else { sp.anims.stop(); sp.setFrame(ROW[a.dir] * cols); }
-        }
-      } else { // 進食/睡覺/打哈欠（單排動畫）
-        if (this.animated(key)) {
-          if (key === base + "_eat") { if (!a.eatStarted) { sp.play(key); a.eatStarted = true; } } // 只播一次，停在骨頭
-          else sp.play(key, true); // 睡覺/哈欠循環
-        } else sp.anims.stop();
+        else { sp.anims.stop(); sp.setFrame(a.state === "sleep" ? 7 : a.state === "eat" ? 8 : 6); }
       }
-      // ---- 引擎疊加特效(開羅式)：沒有對應圖或開羅模式時使用 ----
-      const wantZzz = a.state === "sleep" && (isK || !this.hasImg(base + "_sleep"));
-      if (wantZzz) {
+      // ---- 引擎疊加特效：睡覺 Zzz / 進食 肉→骨 ----
+      if (a.state === "sleep") {
         let t = this.fxZzz.get(a);
         if (!t) { t = scene.add.text(0, 0, "z", { fontFamily: "monospace", fontStyle: "bold", fontSize: Math.max(10, fr * 0.3) + "px", color: "#3a3a4a" }).setOrigin(0.5, 1); this.fxZzz.set(a, t); }
         t.setText(["z", "zz", "zzz"][Math.floor(a.animTime * 1.1) % 3]);
-        t.setPosition(p.x + fr * 0.18, p.y - fr * 0.6 - (a.animTime % 1.4) * 3).setDepth(a.fx + a.fy + 0.001).setAlpha(1);
+        t.setPosition(p.x + fr * 0.18, p.y - fr * 0.55 - (a.animTime % 1.4) * 3).setDepth(a.fx + a.fy + 0.001);
       } else { const t = this.fxZzz.get(a); if (t) { t.destroy(); this.fxZzz.delete(a); } }
-      const wantFood = a.state === "eat" && (isK || !this.hasImg(base + "_eat"));
-      if (wantFood) {
+      if (a.state === "eat") {
         let f = this.fxFood.get(a);
         if (!f) { f = scene.add.image(0, 0, "fx_meat").setOrigin(0.5, 1); this.fxFood.set(a, f); }
         f.setTexture(a.stateT <= 2 ? "fx_bone" : "fx_meat"); // 最後2秒剩骨頭
@@ -291,7 +222,11 @@ export class Renderer {
       const bob = (!this.animated("visitor") && v.moving) ? Math.abs(Math.sin(v.frame * 1.6)) * 1.6 : 0;
       sp.setPosition(p.x, p.y - bob).setDepth(v.fx + v.fy);
       this.shadow(p.x, p.y, 14, 6);
-      if (this.animated("visitor")) { if (v.moving) sp.play("visitor_" + v.dir, true); else { sp.anims.stop(); sp.setFrame(ROW[v.dir] * 4); } }
+      if (this.animated("visitor")) {
+        sp.flipX = (v.dir === "right");
+        if (v.moving) sp.play("visitor_" + v.dir, true);
+        else { sp.anims.stop(); sp.setFrame(v.dir === "up" ? 4 : (v.dir === "left" || v.dir === "right") ? 2 : 0); }
+      }
     }
     for (const [v, sp] of this.visitorSprites) if (!seenV.has(v)) { sp.destroy(); this.visitorSprites.delete(v); }
   }
