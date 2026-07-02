@@ -4,7 +4,7 @@
 // 遊客：從入口進場(付門票)→沿步道走到獸欄看動物/到商店消費→離場。
 // 動物：在自己的獸欄內走動。畫面在 draw.js。
 // ============================================================
-import { ZOO_W, ZOO_H, GROUND, STRUCTURES, ANIMALS, VISITOR, START_MONEY, SAVE_KEY, DAY_SEC, TICKET } from "./config.js";
+import { ZOO_W, ZOO_H, GROUND, STRUCTURES, ANIMALS, VISITOR, START_MONEY, SAVE_KEY, DAY_SEC, TICKET, KAIRO } from "./config.js";
 
 const rnd = (r) => r[0] + Math.random() * (r[1] - r[0]);
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
@@ -17,9 +17,16 @@ export class Zoo {
     this.tiles = [];
     for (let i = 0; i < this.w * this.h; i++) this.tiles.push({ g: "grass", b: null });
     this.money = START_MONEY;
-    this.day = 1; this.timeAcc = 0; this.spawnAcc = 0;
+    this.month = 1; this.timeAcc = 0; this.spawnAcc = 0;
     this.structures = []; this.visitors = []; this.served = 0;
     this.nextId = 0;
+    // ---- 開羅式經營狀態 ----
+    this.pop = 0;                    // 人氣(遊客滿意累積)
+    this.rp = 0;                     // 研究點數(解鎖動物用)
+    this.unlocked = { lion: true };  // 已解鎖動物
+    this.mIncome = 0; this.mExpense = 0; this.mVisitors = 0; // 當月統計
+    this.lastReport = null; this.reportReady = false;        // 月結報表
+    this.events = [];                // 待顯示訊息(升級/組合等)
 
     // 入口廣場（底部中央）+ 一段步道作起點
     this.entrance = { cx: Math.floor(this.w / 2), cy: this.h - 1 };
@@ -65,12 +72,13 @@ export class Zoo {
     const { w, h } = def.footprint;
     if (!this.inBounds(cx, cy) || !this.inBounds(cx + w - 1, cy + h - 1)) return { msg: "超出範圍" };
     if (!this.areaFree(cx, cy, w, h)) return { msg: `需要 ${w}×${h} 空地` };
+    if (kind === "enclosure" && !this.unlocked[species]) return { msg: `${ANIMALS[species].name}尚未解鎖` };
     let cost = def.cost;
     if (kind === "enclosure") cost += ANIMALS[species].buy * 2; // 含 2 隻動物
     if (this.money < cost) return { msg: "資金不足" };
     this.money -= cost;
     const id = this.nextId++;
-    const st = { id, kind, ox: cx, oy: cy, w, h, species: species || null, animals: [] };
+    const st = { id, kind, ox: cx, oy: cy, w, h, species: species || null, animals: [], lv: 1 };
     if (kind === "enclosure") for (let i = 0; i < 2; i++) st.animals.push(this.makeAnimal(st));
     this.structures.push(st);
     for (let y = cy; y < cy + h; y++) for (let x = cx; x < cx + w; x++) { const t = this.tile(x, y); t.b = id; }
@@ -100,9 +108,11 @@ export class Zoo {
     this.money -= cost; s.animals.push(this.makeAnimal(s));
     return { ok: true, msg: `加了一隻${ANIMALS[s.species].name}` };
   }
-  makeAnimal(st) {
+  earn(n) { this.money += n; this.mIncome += n; }
+  makeAnimal(st, xp = 0) {
     const a = { fx: st.ox + Math.random() * st.w, fy: st.oy + Math.random() * st.h,
       tx: 0, ty: 0, state: "walk", stateT: 0, frame: 0, animTime: 0, moving: false, dir: "down",
+      xp, lv: Math.min(KAIRO.maxAnimalLv, 1 + Math.floor(xp / KAIRO.xpPerLv)),
       yawning: false, yawnDur: 0, yawnT: 3 + Math.random() * 6, eatStarted: false };
     this.startWander(st, a);
     return a;
@@ -123,14 +133,51 @@ export class Zoo {
   }
 
   // 魅力（影響遊客生成速度）
+  // 兩設施是否相鄰(外框擴1格相交) — 開羅式組合加成
+  adjacentTo(a, b) {
+    return a.ox - 1 <= b.ox + b.w - 1 && a.ox + a.w >= b.ox && a.oy - 1 <= b.oy + b.h - 1 && a.oy + a.h >= b.oy;
+  }
+  treeBonus(s) { // 獸欄旁的樹：環境加成(每棵+2，最多+6)
+    let n = 0;
+    for (const t of this.structures) if (t.kind === "tree" && this.adjacentTo(s, t)) n++;
+    return Math.min(6, n * 2);
+  }
+  shopCombo(s) { // 咖啡×紀念品相鄰 → 商圈組合(售價×1.25)
+    return this.structures.some((t) => t.id !== s.id && (t.kind === "cafe" || t.kind === "souvenir") && t.kind !== s.kind && this.adjacentTo(s, t));
+  }
   attraction() {
     let a = 0;
     for (const s of this.structures) {
-      if (s.kind === "enclosure") a += ANIMALS[s.species].popularity * s.animals.length;
+      if (s.kind === "enclosure") {
+        a += ANIMALS[s.species].popularity * s.animals.length;
+        a += s.animals.reduce((sum, an) => sum + (an.lv - 1) * 2, 0); // 動物等級加成
+        a += this.treeBonus(s);                                       // 樹木環境加成
+      }
       else if (s.kind === "tree") a += STRUCTURES.tree.attraction;
-      else a += 2;
+      else a += 2 + ((s.lv || 1) - 1);                                // 商店(升級小加成)
     }
     return a;
+  }
+  // 解鎖動物(開羅式研究)：人氣達標 + 花研究點
+  unlockAnimal(species) {
+    const u = ANIMALS[species].unlock || { pop: 0, rp: 0 };
+    if (this.unlocked[species]) return { msg: "已解鎖" };
+    if (this.pop < u.pop) return { msg: `人氣不足(需 ${u.pop})` };
+    if (this.rp < u.rp) return { msg: `研究點不足(需 ${u.rp})` };
+    this.rp -= u.rp; this.unlocked[species] = true;
+    this.events.push(`🎉 解鎖新動物：${ANIMALS[species].name}！`);
+    return { ok: true, msg: `解鎖了${ANIMALS[species].name}！` };
+  }
+  // 商店升級(開羅式設施Lv)
+  upgradeShop(structId) {
+    const s = this.structures.find((x) => x.id === structId);
+    if (!s || (s.kind !== "cafe" && s.kind !== "souvenir")) return { msg: "" };
+    const def = STRUCTURES[s.kind], lv = s.lv || 1;
+    if (lv >= def.maxLv) return { msg: "已達最高等級" };
+    const cost = def.upCost * lv;
+    if (this.money < cost) return { msg: `升級要 $${cost}` };
+    this.money -= cost; s.lv = lv + 1;
+    return { ok: true, msg: `${def.name}升到 Lv${s.lv}！收入提高` };
   }
 
   // ---- 尋路（遊客走步道）----
@@ -163,16 +210,22 @@ export class Zoo {
 
   // ---- 主更新 ----
   update(dt) {
-    // 換日：扣維護費
+    // 換月：扣維護費 + 產出月結報表(開羅式)
     this.timeAcc += dt;
     if (this.timeAcc >= DAY_SEC) {
-      this.timeAcc -= DAY_SEC; this.day += 1;
+      this.timeAcc -= DAY_SEC;
       let upkeep = 0;
       for (const s of this.structures) {
-        if (s.kind === "enclosure") upkeep += s.animals.length * 8;
-        else if (s.kind === "cafe" || s.kind === "souvenir") upkeep += 10;
+        if (s.kind === "enclosure") upkeep += s.animals.length * KAIRO.upkeepAnimal;
+        else if (s.kind === "cafe" || s.kind === "souvenir") upkeep += KAIRO.upkeepShop;
+        else if (s.kind === "tree") upkeep += KAIRO.upkeepTree;
       }
-      this.money -= upkeep;
+      this.money -= upkeep; this.mExpense += upkeep;
+      this.lastReport = { month: this.month, income: Math.round(this.mIncome), expense: this.mExpense,
+        net: Math.round(this.mIncome - this.mExpense), visitors: this.mVisitors, pop: this.pop, rp: this.rp };
+      this.reportReady = true;
+      this.mIncome = 0; this.mExpense = 0; this.mVisitors = 0;
+      this.month += 1;
     }
     // 生成遊客（魅力越高越快）
     this.spawnAcc += dt;
@@ -187,9 +240,10 @@ export class Zoo {
   spawn() {
     if (this.visitors.length >= VISITOR.maxInPark) return;
     if (!this.walkable(this.entrance.cx, this.entrance.cy)) return;
-    this.money += TICKET; this.served += 1;
+    this.earn(TICKET); this.served += 1; this.mVisitors += 1;
     const v = { fx: this.entrance.cx, fy: this.entrance.cy, path: null, pi: 1, state: "idle",
-      wait: 0, dir: "up", frame: 0, animTime: 0, moving: false, color: pick(VISITOR.colors), visits: 1 + Math.floor(Math.random() * 3) };
+      wait: 0, dir: "up", frame: 0, animTime: 0, moving: false, color: pick(VISITOR.colors),
+      visits: 1 + Math.floor(Math.random() * 3), sat: 0 };
     this.visitors.push(v);
     this.planNext(v);
   }
@@ -227,10 +281,27 @@ export class Zoo {
   }
   arrive(v) {
     v.moving = false; v.path = null;
-    if (v.state === "leave") { v.done = true; return; }
+    if (v.state === "leave") {
+      v.done = true;
+      this.pop += v.sat;                       // 滿意度累積成人氣
+      this.rp += Math.floor(v.sat / 2);        // 一半轉研究點
+      return;
+    }
     const s = v.target;
-    if (s && s.kind === "enclosure") { v.state = "view"; v.wait = rnd(VISITOR.viewSec); }
-    else if (s) { v.state = "buy"; v.wait = rnd(VISITOR.buySec); this.money += STRUCTURES[s.kind].sale; }
+    if (s && s.kind === "enclosure") {
+      v.state = "view"; v.wait = rnd(VISITOR.viewSec); v.sat += 1;
+      for (const an of s.animals) { // 被觀看的動物累積經驗，升級提高魅力(開羅式養成)
+        an.xp += KAIRO.xpPerView;
+        const nl = Math.min(KAIRO.maxAnimalLv, 1 + Math.floor(an.xp / KAIRO.xpPerLv));
+        if (nl > an.lv) { an.lv = nl; this.events.push(`⭐ ${ANIMALS[s.species].name}升到 Lv${nl}！`); }
+      }
+    }
+    else if (s) {
+      v.state = "buy"; v.wait = rnd(VISITOR.buySec); v.sat += 1;
+      let amt = STRUCTURES[s.kind].sale * (1 + 0.4 * ((s.lv || 1) - 1)); // 商店等級加成
+      if (this.shopCombo(s)) amt *= KAIRO.comboSale;                      // 商圈組合加成
+      this.earn(Math.round(amt));
+    }
     else this.planNext(v);
   }
   faceWorld(o, dx, dy) {
@@ -259,20 +330,28 @@ export class Zoo {
 
   // ---- 存讀檔（遊客/動物即時狀態不存，重建）----
   serialize() {
-    return { v: 1, w: this.w, h: this.h, money: this.money, day: this.day, served: this.served, nextId: this.nextId,
+    return { v: 2, w: this.w, h: this.h, money: this.money, month: this.month, served: this.served, nextId: this.nextId,
+      pop: this.pop, rp: this.rp, unlocked: this.unlocked,
       tiles: this.tiles.map((t) => ({ g: t.g, b: t.b })),
-      structures: this.structures.map((s) => ({ id: s.id, kind: s.kind, ox: s.ox, oy: s.oy, w: s.w, h: s.h, species: s.species, n: s.animals.length })) };
+      structures: this.structures.map((s) => ({ id: s.id, kind: s.kind, ox: s.ox, oy: s.oy, w: s.w, h: s.h,
+        species: s.species, lv: s.lv || 1, xs: s.animals.map((a) => a.xp) })) };
   }
   load(data) {
-    if (!data || data.v !== 1 || data.w !== this.w || data.h !== this.h) return false;
+    if (!data || (data.v !== 1 && data.v !== 2) || data.w !== this.w || data.h !== this.h) return false;
     this.reset();
-    this.money = data.money; this.day = data.day; this.served = data.served || 0; this.nextId = data.nextId || 0;
+    this.money = data.money; this.month = data.month || data.day || 1;
+    this.served = data.served || 0; this.nextId = data.nextId || 0;
+    this.pop = data.pop || 0; this.rp = data.rp || 0;
+    this.unlocked = data.unlocked || { lion: true };
     this.tiles = data.tiles.map((t) => ({ g: t.g, b: t.b }));
     this.structures = data.structures.map((s) => {
-      const st = { ...s, animals: [] };
-      if (s.kind === "enclosure") for (let i = 0; i < (s.n || 0); i++) st.animals.push(this.makeAnimal(st));
-      delete st.n; return st;
+      const st = { id: s.id, kind: s.kind, ox: s.ox, oy: s.oy, w: s.w, h: s.h, species: s.species, lv: s.lv || 1, animals: [] };
+      const xs = s.xs || Array(s.n || 0).fill(0);
+      if (s.kind === "enclosure") for (const xp of xs) st.animals.push(this.makeAnimal(st, xp));
+      return st;
     });
+    // 舊檔可能已放置未解鎖動物 → 直接視為已解鎖
+    for (const st of this.structures) if (st.kind === "enclosure") this.unlocked[st.species] = true;
     this.visitors = []; this.timeAcc = 0; this.spawnAcc = 0;
     return true;
   }

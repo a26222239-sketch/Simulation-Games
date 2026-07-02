@@ -8,7 +8,7 @@ import { Zoo } from "./zoo.js";
 import { UI } from "./ui.js";
 import { Renderer } from "./render.js";
 import { gridToScreen } from "./iso.js";
-import { TILE_W, TILE_H, STRUCTURES } from "./config.js";
+import { TILE_W, TILE_H, STRUCTURES, ANIMALS } from "./config.js";
 
 const HW = TILE_W / 2, HH = TILE_H / 2;
 const zoo = new Zoo();
@@ -88,6 +88,9 @@ class MainScene extends Phaser.Scene {
     if (this.renderer.groundDirty) { this.renderer.redrawGround(); this.renderer.groundDirty = false; }
     this.renderer.drawPreview(previewState());
     this.renderer.sync();
+    // 開羅式訊息：升級/解鎖事件跑馬 + 月結報表
+    while (zoo.events.length) toast(zoo.events.shift());
+    if (zoo.reportReady) { zoo.reportReady = false; ui.showReport(zoo.lastReport); zoo.save(); }
     updateHUD();
   }
 }
@@ -128,6 +131,12 @@ function onTap(cx, cy) {
     else if (!pendingSpecies) { toast("先在工具列選獸欄、挑動物"); return; }
     else r = zoo.place("enclosure", cx, cy, pendingSpecies);
   }
+  // 點到既有商店(任何工具下) → 開升級視窗(開羅式設施Lv)
+  if (!r) {
+    const t = zoo.tile(cx, cy);
+    const shop = t && t.b != null ? zoo.structures.find((s) => s.id === t.b && (s.kind === "cafe" || s.kind === "souvenir")) : null;
+    if (shop) { ui.showUpgrade(shop, zoo, (m) => { toast(m); refresh(); }); return; }
+  }
   if (r && r.msg) toast(r.msg);
   refresh();
 }
@@ -136,11 +145,15 @@ function onTap(cx, cy) {
 const elMoney = document.getElementById("stat-money");
 const elVisitors = document.getElementById("stat-visitors");
 const elDay = document.getElementById("stat-day");
+const elPop = document.getElementById("stat-pop");
+const elRp = document.getElementById("stat-rp");
 const elAttr = document.getElementById("stat-attr");
 function updateHUD() {
   elMoney.textContent = Math.floor(zoo.money).toLocaleString();
   elVisitors.textContent = zoo.visitors.length;
-  elDay.textContent = zoo.day;
+  elDay.textContent = zoo.month;
+  elPop.textContent = Math.floor(zoo.pop);
+  elRp.textContent = Math.floor(zoo.rp);
   elAttr.textContent = Math.round(zoo.attraction());
 }
 
@@ -150,7 +163,7 @@ function bindUI() {
   const sel = (name) => { currentTool = name; tools.forEach((b) => b.classList.toggle("active", b.dataset.tool === name)); };
   tools.forEach((b) => b.addEventListener("click", () => {
     sel(b.dataset.tool);
-    if (b.dataset.tool === "enclosure") ui.openAnimalPick((species) => { pendingSpecies = species; toast(`點空地放${species}獸欄；點既有獸欄加動物`); });
+    if (b.dataset.tool === "enclosure") ui.openAnimalPick(zoo, (species) => { pendingSpecies = species; toast(`選好${ANIMALS[species].name}！點空地蓋獸欄`); }, (m) => toast(m));
   }));
   sel("path");
 

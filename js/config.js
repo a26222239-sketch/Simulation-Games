@@ -10,6 +10,8 @@ export const ZOO_H = 24;
 export const START_MONEY = 2500;
 export const SAVE_KEY = "mini-zoo-save-v1";
 
+// 開羅式經營參數
+export const KAIRO = { upkeepAnimal: 5, upkeepShop: 12, upkeepTree: 1, comboSale: 1.25, xpPerView: 1, xpPerLv: 12, maxAnimalLv: 5 };
 export const DAY_SEC = 45;      // 幾秒過一天（換日扣維護費）
 export const TICKET = 12;       // 門票（遊客進場收入）
 
@@ -25,8 +27,8 @@ export const GROUND = {
 // footprint 佔地；blocksWalk 是否擋住遊客行走（遊客只走 path/plaza）
 export const STRUCTURES = {
   enclosure: { name: "獸欄", footprint: { w: 3, h: 3 }, cost: 300, pen: "#caa46a", side: "#9c7b46" },
-  cafe:      { name: "咖啡廳", footprint: { w: 2, h: 2 }, cost: 350, color: "#b5774a", side: "#8c5836", sale: 16 },
-  souvenir:  { name: "紀念品店", footprint: { w: 2, h: 2 }, cost: 350, color: "#4f8edc", side: "#3a6aa6", sale: 24 },
+  cafe:      { name: "咖啡廳", footprint: { w: 2, h: 2 }, cost: 350, color: "#b5774a", side: "#8c5836", sale: 16, upCost: 150, maxLv: 5 },
+  souvenir:  { name: "紀念品店", footprint: { w: 2, h: 2 }, cost: 350, color: "#4f8edc", side: "#3a6aa6", sale: 24, upCost: 180, maxLv: 5 },
   tree:      { name: "樹木", footprint: { w: 1, h: 1 }, cost: 40, color: "#2f8f3e", trunk: "#7a5230", attraction: 1 },
 };
 
@@ -39,11 +41,11 @@ export const STRUCTURES = {
 //   ★ 開羅模式(kairo:true)：每隻動物一張 1×9 像素條(前走2|側走2|背走2|坐|睡|吃)，
 //   陰影/Zzz/食物/右向 全由程式處理（見 CLAUDE.md 開羅模式）。
 export const ANIMALS = {
-  lion:     { name: "非洲獅", body: "#d9a441", accent: "#a87a2a", buy: 200, popularity: 6, speed: 0.7, size: 1.1, frame: 48, kairo: true },
-  elephant: { name: "大象", body: "#9aa0a6", accent: "#787e84", buy: 350, popularity: 8, speed: 0.5, size: 1.4, frame: 72, kairo: true },
-  penguin:  { name: "企鵝", body: "#2b2f36", accent: "#f1f1f1", buy: 150, popularity: 5, speed: 0.9, size: 0.8, frame: 36, kairo: true },
-  monkey:   { name: "猴子", body: "#8a5a3b", accent: "#caa46a", buy: 180, popularity: 5, speed: 1.1, size: 0.8, frame: 42, kairo: true },
-  giraffe:  { name: "長頸鹿", body: "#e8c14a", accent: "#b5894a", buy: 320, popularity: 7, speed: 0.6, size: 1.5, frame: 72, kairo: true },
+  lion:     { name: "非洲獅", body: "#d9a441", accent: "#a87a2a", buy: 200, popularity: 6, speed: 0.7, size: 1.1, frame: 48, kairo: true, unlock: { pop: 0, rp: 0 } },
+  elephant: { name: "大象", body: "#9aa0a6", accent: "#787e84", buy: 350, popularity: 8, speed: 0.5, size: 1.4, frame: 72, kairo: true, unlock: { pop: 250, rp: 20 } },
+  penguin:  { name: "企鵝", body: "#2b2f36", accent: "#f1f1f1", buy: 150, popularity: 5, speed: 0.9, size: 0.8, frame: 36, kairo: true, unlock: { pop: 70, rp: 6 } },
+  monkey:   { name: "猴子", body: "#8a5a3b", accent: "#caa46a", buy: 180, popularity: 5, speed: 1.1, size: 0.8, frame: 42, kairo: true, unlock: { pop: 30, rp: 3 } },
+  giraffe:  { name: "長頸鹿", body: "#e8c14a", accent: "#b5894a", buy: 320, popularity: 7, speed: 0.6, size: 1.5, frame: 72, kairo: true, unlock: { pop: 150, rp: 12 } },
 };
 
 // ---- 遊客 ----
