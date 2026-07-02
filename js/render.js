@@ -188,7 +188,7 @@ export class Renderer {
       const p = gridToScreen(a.fx, a.fy);
       const bob = (a.moving) ? Math.abs(Math.sin(a.frame * 1.6)) * 2 : 0;
       sp.setPosition(p.x, p.y - bob).setDepth(a.fx + a.fy);
-      this.shadow(p.x, p.y, fr * 0.55, fr * 0.2); // 陰影一律程式畫
+      if (!this.animated(base)) this.shadow(p.x, p.y, fr * 0.55, fr * 0.2); // 佔位圖才畫程式影子；正式像素圖陰影自帶
       if (this.animated(base)) {
         if (a.state === "walk" && a.moving) sp.play(base + "_" + a.dir, true);
         else { sp.anims.stop(); sp.setFrame(a.state === "sleep" ? 7 : a.state === "eat" ? 8 : 6); }
